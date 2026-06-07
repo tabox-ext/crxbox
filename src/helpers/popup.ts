@@ -36,7 +36,8 @@ export class PopupHelper {
       }
     });
     if (lastError) {
-      throw new CrxboxError({ code: 'popup/no-active-tab', cause: lastError });
+      opened.catch(() => {}); // suppress the now-orphaned waitForEvent timeout rejection
+      throw new CrxboxError({ code: 'popup/no-active-tab', popupPath, cause: lastError });
     }
     return opened.catch(() => {
       throw new CrxboxError({ code: 'popup/no-active-tab', popupPath });
