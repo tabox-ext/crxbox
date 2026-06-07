@@ -2,6 +2,7 @@ import type { BrowserContext } from '@playwright/test';
 
 export interface ExtOptions {
   path: string;
+  /** Reserved for a future deterministic-ID feature; not yet wired in v1. */
   key?: string;
 }
 

@@ -5,12 +5,22 @@ import { CrxboxError } from './diagnostics.js';
 
 export interface LoadOptions {
   path: string;
+  /**
+   * Reserved for a future deterministic-extension-ID feature (injecting a `key`
+   * into the loaded manifest). Not yet wired in v1 — setting it has no effect.
+   */
   key?: string;
 }
 
 export async function launchWithExtension(opts: LoadOptions): Promise<BrowserContext> {
+  if (!opts.path) {
+    throw new CrxboxError({
+      code: 'loader/build-not-found',
+      path: '(empty — extensionPath option is not set)',
+    });
+  }
   const extPath = path.resolve(opts.path);
-  if (!opts.path || !fs.existsSync(path.join(extPath, 'manifest.json'))) {
+  if (!fs.existsSync(path.join(extPath, 'manifest.json'))) {
     throw new CrxboxError({ code: 'loader/build-not-found', path: extPath });
   }
   return chromium.launchPersistentContext('', {

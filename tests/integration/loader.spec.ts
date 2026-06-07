@@ -1,4 +1,4 @@
-import { test, expect, EXT_PATH } from './_setup';
+import { test, expect, EXT_PATH } from './_setup.js';
 
 test.use({ extensionPath: EXT_PATH });
 

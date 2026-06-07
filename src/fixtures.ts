@@ -3,7 +3,12 @@ import { launchWithExtension, resolveExtensionId } from './loader.js';
 import { Ext } from './ext.js';
 
 export interface CrxboxOptions {
+  /** Path to the built, unpacked extension (the directory containing `manifest.json`). */
   extensionPath: string;
+  /**
+   * Reserved for a future deterministic-extension-ID feature; not yet wired in v1.
+   * Setting it currently has no effect.
+   */
   extensionKey?: string;
 }
 
