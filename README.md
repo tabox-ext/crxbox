@@ -21,6 +21,41 @@ test('save the current tab from the popup', async ({ ext, page }) => {
 
 ---
 
+## Why crxbox?
+
+### vs. plain Playwright
+
+Playwright *can* drive extensions — but it isn't extension-aware, so you hand-roll the same ~150-line fixtures file every project and re-discover the same sharp edges. crxbox is a thin layer **on top of** Playwright (you keep all of it — locators, assertions, traces, parallelism, the trace viewer) that ships the extension-specific parts as first-class helpers:
+
+| You'd hand-roll in plain Playwright | crxbox gives you |
+|---|---|
+| Persistent-context launch flags, `--load-extension`, channel setup | `test.use({ extensionPath })` — one line |
+| Parse the extension ID out of the service-worker URL | `ext.id`, `ext.url('page.html')` |
+| Open `chrome-extension://…/popup.html` and reason about the active tab | `ext.popup.open()` (auto-resolves the manifest popup) / `openForTab()` |
+| Guess *when* a content script injected; pierce Shadow DOM / iframes by hand | `await ext.contentUi(page, { root, shadow?, frame? })` — waits for injection, scopes for you |
+| No built-in way to **forcibly** restart an MV3 service worker | `ext.background.kill()` (CDP-forced) — assert state survives a restart |
+| `serviceWorker.evaluate` plumbing to read `chrome.storage` | `ext.storage.local/sync/session` + `toHaveStorageValue`, auto-reset between tests |
+| Vague `TimeoutError` when injection/registration fails | `CrxboxError` with a machine-readable `diagnostic.code` (e.g. `content-ui/not-injected`) and a fix hint |
+
+If you already have that fixtures file and love maintaining it, crxbox just deletes it. Nothing is locked in — `createExtensionFixtures()` composes into your own `test`.
+
+### vs. Storybook (and other component-level tools)
+
+Storybook is a **component workbench** — it renders your UI components in isolation against *mocked* data and a stubbed environment. That's great for building and visually reviewing components, but it can't prove your extension actually *works*, because it never runs the real thing:
+
+| | Storybook | crxbox |
+|---|---|---|
+| What runs | A component, in isolation, with mocked `chrome.*` | The **real, installed extension** in a real Chromium |
+| `chrome.*` APIs, permissions | Mocked / stubbed | Real runtime |
+| Background service worker (incl. MV3 suspend/restart) | ✗ | ✓ (evaluate, message, forced `kill()`) |
+| Content script actually injected into a host page (timing, Shadow DOM, iframe, SPA nav) | ✗ | ✓ (flagship) |
+| Toolbar popup against the active tab | ✗ | ✓ |
+| `chrome.storage` lifecycle, cross-context message flow | ✗ | ✓ |
+
+They operate at **different layers and are complementary**: use Storybook (or Vitest/Jest with mocks) for fast, isolated component and unit work; use crxbox for end-to-end proof that the extension behaves correctly when actually loaded in the browser. crxbox is the layer that catches the bugs mocks hide — injection races, lost service-worker state, permission and active-tab wiring.
+
+---
+
 ## Requirements
 
 - **Node 18+**
