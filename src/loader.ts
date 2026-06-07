@@ -1,6 +1,7 @@
 import { chromium, type BrowserContext, type LaunchOptions } from '@playwright/test';
 import path from 'node:path';
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import { CrxboxError } from './diagnostics.js';
 
 export interface LoadOptions {
@@ -43,7 +44,50 @@ export function buildPersistentContextOptions(
   };
 }
 
+/**
+ * Pure comparison: given the `@playwright/test` path resolved from crxbox's own
+ * module and the one resolved from the consumer, return the offending pair when
+ * they differ (two distinct copies → Playwright's "Requiring second time" crash),
+ * or null when they match / either could not be resolved.
+ */
+export function findDuplicatePlaywright(
+  crxboxPath: string | null,
+  consumerPath: string | null,
+): { crxboxPath: string; consumerPath: string } | null {
+  if (!crxboxPath || !consumerPath || crxboxPath === consumerPath) return null;
+  return { crxboxPath, consumerPath };
+}
+
+/**
+ * Best-effort guard against the single biggest adoption papercut: two
+ * @playwright/test instances on disk (e.g. a live-symlinked dev checkout that
+ * ships its own node_modules). Resolves the module from crxbox's own location
+ * and from the consumer's cwd; if they realpath to different files, throws a
+ * crxbox diagnostic instead of letting Playwright fail cryptically. If either
+ * side can't be resolved, the check is skipped — it must never mask a real launch.
+ */
+export function assertSinglePlaywright(): void {
+  let crxboxPath: string | null = null;
+  let consumerPath: string | null = null;
+  try {
+    crxboxPath = fs.realpathSync(createRequire(import.meta.url).resolve('@playwright/test'));
+    const consumerRequire = createRequire(path.join(process.cwd(), '__crxbox_probe__.js'));
+    consumerPath = fs.realpathSync(consumerRequire.resolve('@playwright/test'));
+  } catch {
+    return; // couldn't resolve from one side — skip the best-effort check
+  }
+  const dup = findDuplicatePlaywright(crxboxPath, consumerPath);
+  if (dup) {
+    throw new CrxboxError({
+      code: 'loader/duplicate-playwright',
+      crxboxPath: dup.crxboxPath,
+      consumerPath: dup.consumerPath,
+    });
+  }
+}
+
 export async function launchWithExtension(opts: LoadOptions): Promise<BrowserContext> {
+  assertSinglePlaywright();
   if (!opts.path) {
     throw new CrxboxError({
       code: 'loader/build-not-found',

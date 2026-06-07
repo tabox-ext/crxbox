@@ -28,3 +28,15 @@ describe('CrxboxError', () => {
     expect(err.message).toContain('"path":"/x"');
   });
 });
+
+describe('loader/duplicate-playwright hint', () => {
+  it('renders a hint for the duplicate-playwright code', () => {
+    const err = new CrxboxError({
+      code: 'loader/duplicate-playwright',
+      crxboxPath: '/a',
+      consumerPath: '/b',
+    });
+    expect(err.message).toContain('hint:');
+    expect(err.diagnostic.code).toBe('loader/duplicate-playwright');
+  });
+});

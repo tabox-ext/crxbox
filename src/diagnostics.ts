@@ -1,6 +1,7 @@
 export type DiagnosticCode =
   | 'loader/build-not-found'
   | 'loader/sw-timeout'
+  | 'loader/duplicate-playwright'
   | 'popup/no-active-tab'
   | 'content-ui/not-injected'
   | 'content-ui/wrong-frame'
@@ -18,6 +19,8 @@ const HINTS: Record<DiagnosticCode, string> = {
     'extensionPath does not point at a built extension — expected a manifest.json there.',
   'loader/sw-timeout':
     'no MV3 service worker registered after load — check manifest "background.service_worker".',
+  'loader/duplicate-playwright':
+    "two @playwright/test copies were resolved (crxbox vs consumer) — crxbox must share the consumer's single instance. Consume crxbox as a published or `npm pack`ed tarball, or dedupe so only one @playwright/test exists; do not live-symlink a dev checkout that ships its own node_modules.",
   'popup/no-active-tab':
     'openForTab() needs a focused active tab — pass the page you navigated, and avoid stealing focus.',
   'content-ui/not-injected':

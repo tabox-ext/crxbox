@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildPersistentContextOptions } from '../../src/loader';
+import { buildPersistentContextOptions, findDuplicatePlaywright } from '../../src/loader';
 
 const EXT = '/tmp/my-ext';
 
@@ -31,5 +31,25 @@ describe('buildPersistentContextOptions', () => {
     expect(out.headless).toBe(false);
     expect(out.slowMo).toBe(250);
     expect(out.devtools).toBe(true);
+  });
+});
+
+describe('findDuplicatePlaywright', () => {
+  it('returns the offending pair when the two resolved paths differ', () => {
+    expect(
+      findDuplicatePlaywright('/a/node_modules/@playwright/test', '/b/node_modules/@playwright/test'),
+    ).toEqual({
+      crxboxPath: '/a/node_modules/@playwright/test',
+      consumerPath: '/b/node_modules/@playwright/test',
+    });
+  });
+
+  it('returns null when both paths are identical (single shared instance)', () => {
+    expect(findDuplicatePlaywright('/same/path', '/same/path')).toBeNull();
+  });
+
+  it('returns null when either path could not be resolved', () => {
+    expect(findDuplicatePlaywright(null, '/b')).toBeNull();
+    expect(findDuplicatePlaywright('/a', null)).toBeNull();
   });
 });
