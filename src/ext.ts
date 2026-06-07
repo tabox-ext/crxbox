@@ -1,6 +1,7 @@
 import type { BrowserContext } from '@playwright/test';
 import { BackgroundHelper } from './helpers/background.js';
 import { StorageHelper } from './helpers/storage.js';
+import { PopupHelper } from './helpers/popup.js';
 
 export interface ExtOptions {
   path: string;
@@ -11,6 +12,7 @@ export interface ExtOptions {
 export class Ext {
   readonly background: BackgroundHelper;
   readonly storage: StorageHelper;
+  readonly popup: PopupHelper;
 
   constructor(
     readonly context: BrowserContext,
@@ -19,6 +21,7 @@ export class Ext {
   ) {
     this.background = new BackgroundHelper(this);
     this.storage = new StorageHelper(this);
+    this.popup = new PopupHelper(this);
   }
 
   url(p: string): string {

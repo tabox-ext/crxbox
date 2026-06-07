@@ -5,3 +5,4 @@ export { CrxboxError } from './diagnostics.js';
 export type { Diagnostic, DiagnosticCode } from './diagnostics.js';
 export { StorageHelper, StorageArea } from './helpers/storage.js';
 export type { Area } from './helpers/storage.js';
+export { PopupHelper } from './helpers/popup.js';
