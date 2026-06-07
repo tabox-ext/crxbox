@@ -62,16 +62,21 @@ export class BackgroundHelper {
    */
   async waitForReady(timeoutMs = 10_000): Promise<void> {
     const deadline = Date.now() + timeoutMs;
-    let lastError: unknown;
+    let lastError: unknown = 'service worker did not become ready';
     while (Date.now() < deadline) {
+      let timer: ReturnType<typeof setTimeout> | undefined;
       const probe = (await Promise.race([
         this.evaluate(() => typeof chrome?.runtime?.id === 'string').then(
           (ok) => ({ ok }),
           (err) => ({ err }),
         ),
-        new Promise((resolve) => setTimeout(() => resolve({ pending: true }), 1_000)),
+        new Promise((resolve) => {
+          timer = setTimeout(() => resolve({ pending: true }), 1_000);
+        }),
       ])) as { ok?: boolean; err?: unknown; pending?: boolean };
-      if (probe.ok) return;
+      clearTimeout(timer); // don't leave a dangling timer when evaluate wins the race
+      if (probe.ok === true) return;
+      if (probe.ok === false) lastError = 'chrome.runtime.id was not a string';
       if (probe.err) lastError = probe.err;
     }
     throw new CrxboxError({ code: 'background/restart-timeout', cause: String(lastError) });
