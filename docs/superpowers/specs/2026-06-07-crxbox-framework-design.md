@@ -51,7 +51,7 @@ These remain on the roadmap (§9) but are not built in v1.
 
 ## 3. Architecture & package layout
 
-Single package, dual ESM+CJS output, full TypeScript types, Node 18+.
+Single package, **ESM-only** output (Node 18+), full TypeScript types. *(As-built: ESM-only was chosen over dual ESM+CJS to avoid the dual-`.d.ts` "are-the-types-wrong" hazard and keep the package lean; Playwright transpiles test files, so this is transparent to test authors.)*
 
 ```
 src/
@@ -134,7 +134,7 @@ test('save current tab from popup', async ({ ext, page }) => {
 | **Loader / ID** | `ext.id` · `ext.url('popup.html')` | ID resolved off the SW URL by default; deterministic `extensionKey` supported for origin allow-listing (§8.4 of research). |
 | **Popup** (honest two modes, research §5.2) | `ext.popup.open()` → `Page` · `ext.popup.openForTab(page)` | `open()` = popup-as-page for logic/UI (~90% of assertions). `openForTab()` = verify the popup opens against the right active tab. No magic single abstraction. |
 | **Content-UI** (flagship, research §5.4) | `ext.contentUi(page, { root, shadow?, frame? })` → `ContentUi` with `.locator()`, `.getByRole()`, `.waitForReady()` | Auto-waits for injection; resolves Shadow-DOM roots and iframe frames; answers "injected? right frame? survived navigation?" |
-| **Background / SW** | `ext.background.evaluate(fn)` · `.sendMessage(msg)` · `.kill()` · `.waitForReady()` · `.logs()` | `kill()` is CDP-forced termination (research §5.3) — the differentiator: assert state survives a forced restart, not just natural suspend. |
+| **Background / SW** | `ext.background.evaluate(fn)` · `.sendMessage(msg)` · `.kill()` · `.waitForReady()` | `kill()` is CDP-forced termination (research §5.3) — the differentiator: assert state survives a forced restart, not just natural suspend. *(As-built: `.logs()` deferred — SW console capture is fiddly; see §9.)* |
 | **Storage** | `ext.storage.local` / `.sync` / `.session`, each: `.get(key)` · `.set(value)` · `.clear()`; auto-reset between tests | Plus matcher `expect(ext.storage.local).toHaveStorageValue(key, expected)`. |
 
 ### Two cross-cutting rules (both serve principle #3)
@@ -258,11 +258,17 @@ In rough priority order, from the research:
 5. **Live MCP server** — expose crxbox capabilities as agent-callable tools.
 6. **Extension-aware recorder.**
 
+**As-built follow-ups surfaced during v1 implementation / dogfooding:**
+7. **`popup.open()` should default to the manifest's `action.default_popup`** instead of hardcoding `popup.html` (the Tabox dogfood needed an explicit `index.html`). The override param exists; just resolve the default from the manifest.
+8. **`ext.background.logs()`** — capture SW console logs/errors (deferred from §4).
+9. **Retrying `toHaveStorageValue`** — a polling variant so async/fire-and-forget writes don't need `expect.poll` (the matcher does a single read today; SKILL documents the workaround).
+10. **More pure-unit coverage** — ID parsing and matcher comparison are currently covered only at the integration layer.
+
 ---
 
 ## 10. Suggested build order (for the implementation plan)
 
-1. Repo scaffold: package, TS build (ESM+CJS), lint, CI skeleton, size-budget gate.
+1. Repo scaffold: package, TS build (ESM-only), lint, CI skeleton, size-budget gate.
 2. Fixture extension (`fixtures/ext/`) — the system-under-test.
 3. Loader + ID + `ext.url()` + pre-wired `test`/`expect` and `createExtensionFixtures`.
 4. Storage helper + `toHaveStorageValue` matcher + auto-reset.
