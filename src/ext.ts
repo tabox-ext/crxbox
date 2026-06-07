@@ -31,6 +31,17 @@ export class Ext {
     return `chrome-extension://${this.id}/${p.replace(/^\//, '')}`;
   }
 
+  /**
+   * Open any extension page (options page, full-page view, sandbox) as a normal
+   * page and return it — the neutral sibling of `popup.open()` for non-popup pages.
+   */
+  async openPage(p: string, opts?: { viewport?: { width: number; height: number } }): Promise<Page> {
+    const page = await this.context.newPage();
+    if (opts?.viewport) await page.setViewportSize(opts.viewport);
+    await page.goto(this.url(p));
+    return page;
+  }
+
   async contentUi(page: Page, opts: ContentUiOptions): Promise<ContentUi> {
     const ui = new ContentUi(this, page, opts);
     await ui.waitForReady(); // structured diagnostic up front (matches `await ext.contentUi(...)`)
