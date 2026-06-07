@@ -23,7 +23,7 @@ const HINTS: Record<DiagnosticCode, string> = {
   'content-ui/not-injected':
     'the root selector never appeared in the expected frame — check the content script matches/run_at, or pass { frame } if it injects into an iframe.',
   'content-ui/wrong-frame':
-    'the target frame was not found — verify the { frame } selector/url matches the iframe that hosts the UI.',
+    'the target <iframe> element was not found in the outer page — verify the { frame } selector matches the iframe that hosts the UI.',
   'background/restart-timeout':
     'the service worker did not come back after kill() — it may be crashing on startup; check SW console logs.',
   'background/eval-failed':

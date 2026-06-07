@@ -5,7 +5,10 @@ import { CrxboxError } from '../diagnostics.js';
 export interface ContentUiOptions {
   /** Selector of the injected root element. */
   root: string;
-  /** The root hosts a Shadow root (must be open). Documents intent; Playwright pierces open shadow DOM. */
+  /**
+   * The root hosts a Shadow root (must be open). Documents intent only — Playwright always
+   * pierces open shadow DOM, so `shadow: false` does NOT disable piercing.
+   */
   shadow?: boolean;
   /** Scope into an iframe by selector before locating the root. */
   frame?: string;
@@ -33,7 +36,10 @@ export class ContentUi {
   }
 
   async waitForReady(): Promise<void> {
-    // If a frame is expected, confirm the frame exists first for a precise diagnostic.
+    // One shared budget across both waits, so the worst case is `timeout` total, not 2×.
+    const deadline = Date.now() + this.timeout;
+    // If a frame is expected, confirm the <iframe> element exists in the outer page first,
+    // so a missing frame is reported as wrong-frame rather than not-injected.
     if (this.opts.frame) {
       const frameHost = this.page.locator(this.opts.frame);
       try {
@@ -49,7 +55,9 @@ export class ContentUi {
       }
     }
     try {
-      await this.rootLocator().waitFor({ state: 'attached', timeout: this.timeout });
+      // max(1, …): Playwright treats timeout 0 as "no timeout", so never pass 0.
+      const remaining = Math.max(1, deadline - Date.now());
+      await this.rootLocator().waitFor({ state: 'attached', timeout: remaining });
     } catch {
       throw new CrxboxError({
         code: 'content-ui/not-injected',
