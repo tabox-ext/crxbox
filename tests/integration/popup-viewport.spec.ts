@@ -22,3 +22,12 @@ test.describe('fixture popupViewport default', () => {
     expect(popup.viewportSize()).toEqual({ width: 400, height: 500 });
   });
 });
+
+test.describe('per-call overrides fixture popupViewport', () => {
+  test.use({ extensionPath: EXT_PATH, popupViewport: { width: 400, height: 500 } });
+
+  test('per-call viewport wins over the fixture popupViewport default', async ({ ext }) => {
+    const popup = await ext.popup.open(undefined, { viewport: { width: 360, height: 600 } });
+    expect(popup.viewportSize()).toEqual({ width: 360, height: 600 });
+  });
+});
