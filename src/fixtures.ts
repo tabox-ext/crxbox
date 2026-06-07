@@ -18,6 +18,12 @@ export interface CrxboxOptions {
    * Setting it currently has no effect.
    */
   extensionKey?: string;
+  /**
+   * Default viewport for `ext.popup.open()` — pin it to your extension's real
+   * popup dimensions so layout-sensitive assertions match production. A per-call
+   * `open({ viewport })` overrides this.
+   */
+  popupViewport?: { width: number; height: number };
 }
 
 export interface CrxboxFixtures {
@@ -25,10 +31,13 @@ export interface CrxboxFixtures {
   ext: Ext;
 }
 
-export function createExtensionFixtures(config: { path?: string; key?: string } = {}) {
+export function createExtensionFixtures(
+  config: { path?: string; key?: string; popupViewport?: { width: number; height: number } } = {},
+) {
   return {
     extensionPath: [config.path ?? '', { option: true }],
     extensionKey: [config.key, { option: true }],
+    popupViewport: [config.popupViewport, { option: true }],
 
     context: async (
       {
@@ -52,11 +61,11 @@ export function createExtensionFixtures(config: { path?: string; key?: string } 
     },
 
     ext: async (
-      { context, extensionPath, extensionKey }: CrxboxFixtures & CrxboxOptions,
+      { context, extensionPath, extensionKey, popupViewport }: CrxboxFixtures & CrxboxOptions,
       use: (e: Ext) => Promise<void>,
     ) => {
       const id = await resolveExtensionId(context);
-      const ext = new Ext(context, id, { path: extensionPath, key: extensionKey });
+      const ext = new Ext(context, id, { path: extensionPath, key: extensionKey, popupViewport });
       await ext.storage.clearAll(); // reset state between tests
       await use(ext);
     },

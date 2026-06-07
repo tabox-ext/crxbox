@@ -8,6 +8,8 @@ export interface ExtOptions {
   path: string;
   /** Reserved for a future deterministic-ID feature; not yet wired in v1. */
   key?: string;
+  /** Default viewport applied by `popup.open()` when no per-call viewport is given. */
+  popupViewport?: { width: number; height: number };
 }
 
 export class Ext {

@@ -7,5 +7,6 @@ export { BackgroundHelper } from './helpers/background.js';
 export { StorageHelper, StorageArea } from './helpers/storage.js';
 export type { Area } from './helpers/storage.js';
 export { PopupHelper } from './helpers/popup.js';
+export type { PopupOpenOptions } from './helpers/popup.js';
 export { ContentUi } from './helpers/content-ui.js';
 export type { ContentUiOptions } from './helpers/content-ui.js';
