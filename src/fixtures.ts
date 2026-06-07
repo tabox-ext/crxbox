@@ -1,4 +1,9 @@
-import { test as base, expect as baseExpect, type BrowserContext } from '@playwright/test';
+import {
+  test as base,
+  expect as baseExpect,
+  type BrowserContext,
+  type PlaywrightWorkerOptions,
+} from '@playwright/test';
 import { launchWithExtension, resolveExtensionId } from './loader.js';
 import { Ext } from './ext.js';
 import { storageMatchers } from './matchers.js';
@@ -26,10 +31,22 @@ export function createExtensionFixtures(config: { path?: string; key?: string } 
     extensionKey: [config.key, { option: true }],
 
     context: async (
-      { extensionPath, extensionKey }: CrxboxOptions,
+      {
+        extensionPath,
+        extensionKey,
+        headless,
+        channel,
+        launchOptions,
+      }: CrxboxOptions & PlaywrightWorkerOptions,
       use: (c: BrowserContext) => Promise<void>,
     ) => {
-      const context = await launchWithExtension({ path: extensionPath, key: extensionKey });
+      const context = await launchWithExtension({
+        path: extensionPath,
+        key: extensionKey,
+        // Forward the test's resolved Playwright launch config (honors --headed,
+        // PWDEBUG, use.launchOptions.slowMo, channel overrides, extra args).
+        launchOptions: { ...launchOptions, headless, channel },
+      });
       await use(context);
       await context.close();
     },
