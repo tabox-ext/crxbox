@@ -31,15 +31,27 @@ test('save the current tab from the popup', async ({ ext, page }) => {
 
 ## Install
 
+Use whichever package manager your project uses — **npm** or **yarn**:
+
 ```bash
+# npm
 npm i -D crxbox @playwright/test
 npx playwright install chromium
+```
+```bash
+# yarn
+yarn add -D crxbox @playwright/test
+yarn playwright install chromium
 ```
 
 > **Not yet published to npm?** While crxbox is local-only, install it from disk instead of the registry (build it once first with `npm run build` in the crxbox repo):
 > ```bash
-> npm i -D /path/to/crxbox @playwright/test
-> npx playwright install chromium
+> # npm
+> npm i -D /path/to/crxbox @playwright/test && npx playwright install chromium
+> ```
+> ```bash
+> # yarn
+> yarn add -D file:/path/to/crxbox @playwright/test && yarn playwright install chromium
 > ```
 
 ## Getting started
