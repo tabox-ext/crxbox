@@ -1,0 +1,30 @@
+// tests/unit/diagnostics.test.ts
+import { describe, it, expect } from 'vitest';
+import { CrxboxError, formatMessage } from '../../src/diagnostics';
+
+describe('formatMessage', () => {
+  it('renders head, single-line json block, and hint', () => {
+    const msg = formatMessage(
+      { code: 'content-ui/not-injected', root: '[data-ext-root]', expectedFrame: 'main', sawFrames: ['main'], waitedMs: 5000 },
+      'content-ui readiness timeout',
+    );
+    expect(msg).toContain('content-ui readiness timeout');
+    expect(msg).toContain('crxbox: {"code":"content-ui/not-injected"');
+    expect(msg).toContain('"root":"[data-ext-root]"');
+    expect(msg).toContain('hint:');
+    // json block must be a single line
+    const jsonLine = msg.split('\n').find((l) => l.includes('crxbox:'))!;
+    expect(jsonLine).not.toContain('\n');
+    expect(() => JSON.parse(jsonLine.slice(jsonLine.indexOf('{')))).not.toThrow();
+  });
+});
+
+describe('CrxboxError', () => {
+  it('exposes the structured diagnostic and code', () => {
+    const err = new CrxboxError({ code: 'loader/build-not-found', path: '/x' });
+    expect(err).toBeInstanceOf(Error);
+    expect(err.name).toBe('CrxboxError');
+    expect(err.diagnostic.code).toBe('loader/build-not-found');
+    expect(err.message).toContain('"path":"/x"');
+  });
+});
