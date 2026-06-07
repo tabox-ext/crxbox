@@ -1,6 +1,6 @@
 # crxbox
 
-> Playwright, but extension-aware. A lightweight (zero-dependency) toolkit for testing Chrome extensions.
+> Playwright, but extension-aware. A lightweight toolkit for testing Chrome extensions — **zero runtime dependencies of its own** (Playwright is a peer dependency you provide; Chromium is installed via Playwright).
 
 ```ts
 import { test, expect } from 'crxbox';
