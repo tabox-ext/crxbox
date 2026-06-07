@@ -1,0 +1,39 @@
+{
+  "name": "crxbox",
+  "version": "0.0.0",
+  "description": "Playwright, but extension-aware. A lightweight toolkit for testing Chrome extensions.",
+  "type": "module",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./skill/SKILL.md": "./skill/SKILL.md"
+  },
+  "files": ["dist", "skill"],
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "build": "tsup",
+    "test:unit": "vitest run",
+    "test:int": "playwright test --pass-with-no-tests",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "check:size": "node scripts/check-size.mjs",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": { "@playwright/test": ">=1.40.0" },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@playwright/test": "^1.49.0",
+    "@types/chrome": "^0.1.42",
+    "@types/node": "^20.0.0",
+    "eslint": "^9.22.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.5.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^2.0.0"
+  },
+  "dependencies": {}
+}
