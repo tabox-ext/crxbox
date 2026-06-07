@@ -1,6 +1,9 @@
 import { test as base, expect as baseExpect, type BrowserContext } from '@playwright/test';
 import { launchWithExtension, resolveExtensionId } from './loader.js';
 import { Ext } from './ext.js';
+import { storageMatchers } from './matchers.js';
+
+baseExpect.extend(storageMatchers);
 
 export interface CrxboxOptions {
   /** Path to the built, unpacked extension (the directory containing `manifest.json`). */
@@ -37,6 +40,7 @@ export function createExtensionFixtures(config: { path?: string; key?: string } 
     ) => {
       const id = await resolveExtensionId(context);
       const ext = new Ext(context, id, { path: extensionPath, key: extensionKey });
+      await ext.storage.clearAll(); // reset state between tests
       await use(ext);
     },
   } as const;
