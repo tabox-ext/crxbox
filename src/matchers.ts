@@ -22,11 +22,19 @@ export const storageMatchers = {
       pass = false;
     }
 
+    // Asymmetric matchers (arrayContaining/objectContaining) stringify poorly via JSON,
+    // so render them with String(); plain values render as JSON.
+    const fmt = (v: unknown): string =>
+      v && typeof (v as { asymmetricMatch?: unknown }).asymmetricMatch === 'function'
+        ? String(v)
+        : JSON.stringify(v);
+
     return {
       pass,
       message: () =>
         `expected storage.${received.area}["${key}"] ${pass ? 'not ' : ''}to equal expected\n` +
-        `  received: ${JSON.stringify(actual)}`,
+        `  expected: ${fmt(expected)}\n` +
+        `  received: ${fmt(actual)}`,
     };
   },
 };
