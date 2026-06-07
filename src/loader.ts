@@ -32,6 +32,27 @@ export async function launchWithExtension(opts: LoadOptions): Promise<BrowserCon
   });
 }
 
+/**
+ * Resolve the extension's default popup page from its manifest
+ * (`action.default_popup`, MV2 `browser_action.default_popup`), falling back to
+ * `popup.html`. Lets `ext.popup.open()` work without the caller knowing the popup
+ * filename. Returns the fallback if the manifest is missing or unreadable.
+ */
+export function readDefaultPopup(extPath: string): string {
+  try {
+    const raw = fs.readFileSync(path.join(path.resolve(extPath), 'manifest.json'), 'utf8');
+    const manifest = JSON.parse(raw) as {
+      action?: { default_popup?: string };
+      browser_action?: { default_popup?: string };
+    };
+    return (
+      manifest.action?.default_popup ?? manifest.browser_action?.default_popup ?? 'popup.html'
+    );
+  } catch {
+    return 'popup.html';
+  }
+}
+
 export async function resolveExtensionId(context: BrowserContext): Promise<string> {
   let [sw] = context.serviceWorkers();
   if (!sw) {

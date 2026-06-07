@@ -1,26 +1,41 @@
 import type { Page } from '@playwright/test';
 import type { Ext } from '../ext.js';
 import { CrxboxError } from '../diagnostics.js';
+import { readDefaultPopup } from '../loader.js';
 
 export class PopupHelper {
+  private defaultPopup?: string;
+
   constructor(private readonly ext: Ext) {}
 
-  /** popup-as-page: open popup.html in a normal page for logic/UI assertions (~90% of cases). */
-  async open(popupPath = 'popup.html'): Promise<Page> {
+  /** The popup path to use when the caller doesn't pass one — read once from the manifest. */
+  private resolvePopupPath(popupPath?: string): string {
+    if (popupPath) return popupPath;
+    this.defaultPopup ??= readDefaultPopup(this.ext.options.path);
+    return this.defaultPopup;
+  }
+
+  /**
+   * popup-as-page: open the popup in a normal page for logic/UI assertions (~90% of cases).
+   * Defaults to the manifest's `action.default_popup` when `popupPath` is omitted.
+   */
+  async open(popupPath?: string): Promise<Page> {
     const page = await this.ext.context.newPage();
-    await page.goto(this.ext.url(popupPath));
+    await page.goto(this.ext.url(this.resolvePopupPath(popupPath)));
     return page;
   }
 
   /**
    * open-for-correct-tab: drive the real action popup from the SW so it binds to the active
    * tab. Requires Chrome 127+ (openPopup stable) and a focused window. Best-effort — see note.
+   * Defaults to the manifest's `action.default_popup` when `popupPath` is omitted.
    */
-  async openForTab(activeTab: Page, popupPath = 'popup.html'): Promise<Page> {
+  async openForTab(activeTab: Page, popupPath?: string): Promise<Page> {
     await activeTab.bringToFront();
+    const resolvedPath = this.resolvePopupPath(popupPath);
     const prefix = this.ext.url('');
     const opened = this.ext.context.waitForEvent('page', {
-      predicate: (p) => p.url().startsWith(prefix + popupPath),
+      predicate: (p) => p.url().startsWith(prefix + resolvedPath),
       timeout: 5_000,
     });
     // openPopup targets the FOCUSED window — bringToFront on the tab isn't enough, so focus
@@ -37,10 +52,10 @@ export class PopupHelper {
     });
     if (lastError) {
       opened.catch(() => {}); // suppress the now-orphaned waitForEvent timeout rejection
-      throw new CrxboxError({ code: 'popup/no-active-tab', popupPath, cause: lastError });
+      throw new CrxboxError({ code: 'popup/no-active-tab', popupPath: resolvedPath, cause: lastError });
     }
     return opened.catch(() => {
-      throw new CrxboxError({ code: 'popup/no-active-tab', popupPath });
+      throw new CrxboxError({ code: 'popup/no-active-tab', popupPath: resolvedPath });
     });
   }
 }

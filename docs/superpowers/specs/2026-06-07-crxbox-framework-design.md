@@ -259,7 +259,7 @@ In rough priority order, from the research:
 6. **Extension-aware recorder.**
 
 **As-built follow-ups surfaced during v1 implementation / dogfooding:**
-7. **`popup.open()` should default to the manifest's `action.default_popup`** instead of hardcoding `popup.html` (the Tabox dogfood needed an explicit `index.html`). The override param exists; just resolve the default from the manifest.
+7. ~~**`popup.open()` should default to the manifest's `action.default_popup`**~~ — **DONE** (post-v1): `open()`/`openForTab()` now auto-resolve the popup path from the manifest (`readDefaultPopup`), falling back to `popup.html`; an explicit path still overrides. Verified against Tabox (`index.html`).
 8. **`ext.background.logs()`** — capture SW console logs/errors (deferred from §4).
 9. **Retrying `toHaveStorageValue`** — a polling variant so async/fire-and-forget writes don't need `expect.poll` (the matcher does a single read today; SKILL documents the workaround).
 10. **More pure-unit coverage** — ID parsing and matcher comparison are currently covered only at the integration layer.

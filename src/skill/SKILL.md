@@ -17,7 +17,7 @@ Composable form: `base.extend(createExtensionFixtures({ path: './dist' }))`.
 
 ## Helpers (`ext` fixture)
 - **ID/URL:** `ext.id`, `ext.url('popup.html')`.
-- **Popup:** `await ext.popup.open()` → Page (logic/UI, the reliable default, ~90%). `await ext.popup.openForTab(page)` → verify active-tab wiring; best-effort only (needs Chrome 127+, a focused window, flaky in new headless) — prefer `open()`.
+- **Popup:** `await ext.popup.open()` → Page (logic/UI, the reliable default, ~90%). With no arg it auto-resolves the popup path from the manifest's `action.default_popup`; pass a path to override. `await ext.popup.openForTab(page)` → verify active-tab wiring; best-effort only (needs Chrome 127+, a focused window, flaky in new headless) — prefer `open()`.
 - **Content-UI (flagship):** `const ui = await ext.contentUi(page, { root, shadow?, frame?, timeout? })` — it is awaited; awaiting waits for the root to be injected. Then `ui.getByRole(...)` / `ui.getByText(...)` / `ui.locator(...)`. `shadow` documents intent only (Playwright always pierces open shadow DOM); use `frame` for iframe-hosted UI.
 - **Background/SW:** `await ext.background.evaluate(fn, arg)`, `.sendMessage(msg)` (sent from a real extension page, returns the SW response), `.waitForReady()`, `.kill()` (forced CDP termination — assert state survives a restart).
 - **Storage:** `ext.storage.local|sync|session` with `.get(key)` / `.set(obj)` / `.clear()`. Auto-reset between tests. Matcher: `await expect(ext.storage.local).toHaveStorageValue(key, expected)` (supports `expect.arrayContaining`/`objectContaining`).

@@ -31,9 +31,10 @@ test('crxbox can reach the Tabox background service worker', async ({ ext }) => 
 });
 
 test('crxbox opens the Tabox popup and it renders real UI', async ({ ext }) => {
-  // (c) Tabox's action.default_popup is index.html (a React app mounting into #root),
-  // not the crxbox default popup.html — so we pass the real path.
-  const popup = await ext.popup.open('index.html');
+  // (c) Tabox's action.default_popup is index.html (a React app mounting into #root).
+  // open() with no argument auto-resolves the popup path from the manifest, so we
+  // don't need to know Tabox's filename.
+  const popup = await ext.popup.open();
 
   // The popup document loads and React mounts content into #root. We assert the
   // popup body actually has rendered child content (robust to Tabox internals we
