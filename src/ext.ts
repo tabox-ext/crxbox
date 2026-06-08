@@ -84,7 +84,10 @@ export class Ext {
    * is version-sensitive; throws `simulate-update/unavailable` if absent. For robust
    * coverage, prefer seeding state + driving the migration entry point directly.
    */
-  async simulateUpdate(opts?: { reason?: string; previousVersion?: string }): Promise<void> {
+  async simulateUpdate(opts?: {
+    reason?: 'install' | 'update' | 'chrome_update' | 'shared_module_update' | (string & {});
+    previousVersion?: string;
+  }): Promise<void> {
     const details = { reason: opts?.reason ?? 'update', previousVersion: opts?.previousVersion };
     const fired = await this.background.evaluate((d) => {
       const ev = chrome.runtime.onInstalled as unknown as { dispatch?: (details: unknown) => void };

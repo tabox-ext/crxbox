@@ -1,4 +1,5 @@
 chrome.runtime.onInstalled.addListener((details) => {
+  if (details.reason === 'install') return; // ignore the real first-install event; we test 'update'
   chrome.storage.local.set({
     onInstalled: { reason: details.reason, previousVersion: details.previousVersion ?? null },
   });

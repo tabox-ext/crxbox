@@ -12,8 +12,8 @@ test('simulateUpdate fires onInstalled with reason "update" and previousVersion'
 
 test('simulateUpdate defaults reason to "update"', async ({ ext }) => {
   await ext.simulateUpdate();
-  await expect(ext.storage.local).toEventuallyHaveStorageValue(
-    'onInstalled',
-    expect.objectContaining({ reason: 'update' }),
-  );
+  await expect(ext.storage.local).toEventuallyHaveStorageValue('onInstalled', {
+    reason: 'update',
+    previousVersion: null,
+  });
 });
