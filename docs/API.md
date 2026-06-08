@@ -325,7 +325,7 @@ Opens a real browser window, optionally seeded with one or more tabs. Returns a 
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `tabs` | `string[]` | `[]` | URLs to open in the window. Each entry may be a full URL or a bare extension path (resolved via `ext.url()`). |
+| `tabs` | `string[]` | `[]` | URLs to open in the window. Each entry may be a full URL (`https://…`, `chrome-extension://…`, `data:…`, `about:blank`, `blob:…`) or a bare extension path (resolved via `ext.url()`). |
 | `focused` | `boolean` | `true` | Whether the new window should be focused. |
 
 **`WindowHandle`:**
@@ -366,7 +366,7 @@ Create, query, and close browser tabs via the `chrome.tabs` API from the service
 
 #### `ext.tabs.create(url, opts?)` → `Promise<Page>`
 
-Opens a new tab and returns its Playwright `Page`. `url` may be a full URL or a bare extension path (resolved via `ext.url()`).
+Opens a new tab and returns its Playwright `Page`. `url` may be a full URL (incl. `data:`, `about:blank`, `blob:`) or a bare extension path (resolved via `ext.url()`).
 
 **`opts`:**
 
