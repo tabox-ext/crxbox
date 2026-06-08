@@ -11,6 +11,8 @@ Complete reference for crxbox's public API. For install and a guided getting-sta
   - [`ext.acceptDialogs()`](#extacceptdialogpage)
   - [`ext.dragAndDrop()`](#extdragandropsource-target-opts)
   - [`ext.simulateUpdate()` *(experimental)*](#extsimulateupdate-experimental)
+  - [`ext.windows`](#extwindows)
+  - [`ext.tabs`](#exttabs)
   - [`ext.contentUi()`](#extcontentui)
   - [`ext.background`](#extbackground)
   - [`ext.storage`](#extstorage)
@@ -281,6 +283,107 @@ test('migrates legacy storage on update', async ({ ext }) => {
 
 **Robust fallback — seed-and-drive.** For migration logic with no `onInstalled` dependency, or to stay robust across Chrome versions, prefer the seed-and-drive pattern: seed the pre-update state including the version marker your code compares (`await ext.storage.local.set({ schemaVersion: '3.9.0', /* legacy data */ })`), drive the migration entry point directly (`ext.background.sendMessage({ type: 'RUN_MIGRATION' })` or `ext.background.evaluate(...)`), then assert with `toEventuallyHaveStorageValue`. This approach does not rely on any Chromium event-binding internal and remains stable across Chrome versions.
 
+### `ext.windows`
+
+Open real browser windows seeded with known tabs and drive multi-window flows.
+
+#### `ext.windows.create(opts?)` → `Promise<WindowHandle>`
+
+Opens a real browser window, optionally seeded with one or more tabs. Returns a `WindowHandle`.
+
+**`opts`:**
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `tabs` | `string[]` | `[]` | URLs to open in the window. Each entry may be a full URL or a bare extension path (resolved via `ext.url()`). |
+| `focused` | `boolean` | `true` | Whether the new window should be focused. |
+
+**`WindowHandle`:**
+
+| Member | Type | Description |
+|--------|------|-------------|
+| `id` | `number` | The `chrome.windows` window id. |
+| `tabs` | `Page[]` | Playwright `Page` handles for each seeded tab, in creation order. Empty when `opts.tabs` was omitted or empty. |
+| `focus()` | `() => Promise<void>` | Focus the window (calls `chrome.windows.update`). |
+| `close()` | `() => Promise<void>` | Close the window (calls `chrome.windows.remove`). For mid-test cleanup; windows are also torn down automatically when the per-test Playwright context closes. |
+
+When no `tabs` are supplied, the window opens with the browser's default tab and `handle.tabs` is empty — nothing was seeded to capture as a `Page` handle.
+
+Throws `window/create-failed` if `chrome.windows.create` fails (cause in `diagnostic.cause`).
+
+```ts
+// Seed a window with two tabs and interact with each
+const win = await ext.windows.create({ tabs: ['https://example.com', 'options.html'] });
+const [examplePage, optionsPage] = win.tabs;
+await examplePage.waitForLoadState();
+await optionsPage.getByRole('button', { name: 'Save' }).click();
+
+// Close mid-test
+await win.close();
+```
+
+```ts
+// Open an unsized window (handle.tabs is empty)
+const win = await ext.windows.create();
+console.log(win.id); // chrome window id
+```
+
+---
+
+### `ext.tabs`
+
+Create, query, and close browser tabs via the `chrome.tabs` API from the service worker.
+
+#### `ext.tabs.create(url, opts?)` → `Promise<Page>`
+
+Opens a new tab and returns its Playwright `Page`. `url` may be a full URL or a bare extension path (resolved via `ext.url()`).
+
+**`opts`:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `windowId` | `number` | Open the tab in a specific window (e.g. from a `WindowHandle.id`). |
+| `active` | `boolean` | Whether the tab should become active. |
+
+```ts
+const page = await ext.tabs.create('https://example.com');
+await page.waitForLoadState();
+
+const optionsPage = await ext.tabs.create('options.html', { windowId: win.id, active: true });
+```
+
+#### `ext.tabs.query(filter?)` → `Promise<TabInfo[]>`
+
+Query open tabs via `chrome.tabs.query`. Returns an array of `TabInfo` descriptors.
+
+**`TabInfo`:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `number \| undefined` | Chrome tab id. |
+| `windowId` | `number \| undefined` | Chrome window id containing the tab. |
+| `url` | `string \| undefined` | The tab's URL. |
+| `active` | `boolean` | Whether the tab is active in its window. |
+| `index` | `number` | Zero-based position of the tab in its window. |
+
+```ts
+const tabs = await ext.tabs.query({ active: true });
+const allTabs = await ext.tabs.query(); // no filter — returns all tabs
+```
+
+#### `ext.tabs.close(tab)` → `Promise<void>`
+
+Close a tab by its Playwright `Page` (matched by URL) or by numeric Chrome tab id.
+
+When matching by `Page`, the first open tab whose URL equals `page.url()` is closed. If multiple tabs share that URL, close by numeric id instead (from `query()`).
+
+Throws `tabs/not-found` if no matching tab exists.
+
+```ts
+await ext.tabs.close(page);          // by Page
+await ext.tabs.close(42);            // by numeric tab id
+```
+
 ---
 
 ### `ext.background`
@@ -356,6 +459,38 @@ await expect(ext.storage.local).toHaveStorageValue(
 > await expect.poll(() => ext.storage.local.get('saved')).toEqual(/* … */);
 > ```
 
+### `expect(area).toEventuallyHaveStorageValue(key, expected, opts?)` → `Promise<void>`
+
+Polls the storage area until the value at `key` deep-equals `expected`, or the timeout expires. Useful for async / fire-and-forget writes where a single-read assertion would race.
+
+Supports asymmetric matchers. Can also poll for `expected: undefined` to assert a key was deleted.
+
+**`opts`:**
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `timeout` | `number` | `5000` | Total polling budget in milliseconds. |
+| `interval` | `number` | `100` | Milliseconds between each read. |
+
+```ts
+// After firing an async migration, poll until the schema version is updated
+await expect(ext.storage.local).toEventuallyHaveStorageValue('schemaVersion', '2.0.0');
+
+// Poll for key deletion
+await expect(ext.storage.local).toEventuallyHaveStorageValue('tempKey', undefined);
+
+// Custom timeout
+await expect(ext.storage.local).toEventuallyHaveStorageValue('result', expect.anything(), { timeout: 10_000 });
+```
+
+### `expect(area).toHaveStorageKeys(keys)` → `Promise<void>`
+
+Asserts that the storage area contains **all** of the listed keys (subset check — other keys are allowed). Passes as long as every key in `keys` is present; fails if any are missing.
+
+```ts
+await expect(ext.storage.local).toHaveStorageKeys(['collections', 'settings']);
+```
+
 ---
 
 ## Error handling
@@ -391,6 +526,8 @@ try {
 | `drag/no-bounding-box` | `dragAndDrop` source or target has no bounding box | Ensure the locator resolves to a single visible, attached element before dragging. |
 | `drag/cross-page` | `dragAndDrop` source and target belong to different pages | `dragAndDrop` operates within a single page; both locators must come from the same `Page`. |
 | `simulate-update/unavailable` | `simulateUpdate()` found `chrome.runtime.onInstalled.dispatch` absent | The Chromium event-binding internal is missing in this build — use the seed-and-drive fallback instead (seed pre-update storage, call the migration entry point directly). |
+| `window/create-failed` | `ext.windows.create()` — `chrome.windows.create` returned no window id or threw | Check that the `tabs` URLs are valid and the extension has the `windows` or `tabs` permission. The underlying error is in `diagnostic.cause`. |
+| `tabs/not-found` | `ext.tabs.close()` — no open tab matched the given `Page` URL or numeric tab id | The tab may have already been closed, or multiple tabs share the URL; close by numeric id (from `ext.tabs.query()`) for an unambiguous match. |
 
 ---
 
@@ -402,6 +539,9 @@ import {
   test, expect, createExtensionFixtures,
   // facade + helper classes (mostly for typing)
   Ext, BackgroundHelper, StorageHelper, StorageArea, PopupHelper, ContentUi,
+  WindowsHelper, TabsHelper,
+  // interactions
+  dragAndDrop,
   // errors
   CrxboxError,
 } from 'crxbox';
@@ -410,6 +550,10 @@ import type {
   CrxboxOptions, CrxboxFixtures,   // fixture option/fixture shapes
   Area,                            // 'local' | 'sync' | 'session'
   ContentUiOptions,
+  PopupOpenOptions,
+  DragOptions,
+  WindowHandle,                    // { id, tabs, focus(), close() }
+  TabInfo,                         // { id?, windowId?, url?, active, index }
   Diagnostic, DiagnosticCode,
 } from 'crxbox';
 ```

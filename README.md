@@ -56,18 +56,9 @@ They operate at **different layers and are complementary**: use Storybook (or Vi
 
 ---
 
-## Requirements
+## Consuming crxbox
 
-- **Node 18+**
-- **`@playwright/test`** (peer dependency)
-- **Chromium** — installed via Playwright (`npx playwright install chromium`). Extensions only load in Playwright's bundled Chromium, in a persistent context. crxbox handles the launch for you.
-- **Your extension built to an unpacked folder** — a directory containing `manifest.json` (e.g. `dist/`). crxbox loads it; it does not build it.
-- crxbox is **ESM-only**. If your project's `package.json` is `"type": "commonjs"`, name your Playwright config and spec files `.mjs` / `.mts` (e.g. `playwright.config.mjs`, `e2e/popup.spec.mjs`), or set `"type": "module"`, so crxbox loads as real ESM.
-- **One `@playwright/test` instance.** crxbox and your project must share the same resolved copy of `@playwright/test`. Consume crxbox as a published or `npm pack`ed tarball — not a live dev-checkout symlink that ships its own `node_modules`. crxbox emits `loader/duplicate-playwright` if it detects a duplicate. See [`skill/SKILL.md` §1–2](skill/SKILL.md) for details.
-
-## Install
-
-Use whichever package manager your project uses — **npm** or **yarn**:
+**crxbox must share your project's single `@playwright/test` instance** (it is a peer dependency, not a bundled dependency). Install both together:
 
 ```bash
 # npm
@@ -79,16 +70,28 @@ npx playwright install chromium
 yarn add -D crxbox @playwright/test
 yarn playwright install chromium
 ```
+```bash
+# pnpm
+pnpm add -D crxbox @playwright/test
+pnpm playwright install chromium
+```
 
-> **Not yet published to npm?** While crxbox is local-only, install it from disk instead of the registry (build it once first with `npm run build` in the crxbox repo):
+> **Not yet published to npm?** Install from a packed tarball — run `npm pack` in the crxbox repo once, then point at the resulting `.tgz` file:
 > ```bash
-> # npm
-> npm i -D /path/to/crxbox @playwright/test && npx playwright install chromium
+> npm i -D /path/to/crxbox-0.1.0.tgz @playwright/test && npx playwright install chromium
 > ```
-> ```bash
-> # yarn
-> yarn add -D file:/path/to/crxbox @playwright/test && yarn playwright install chromium
-> ```
+> A tarball has no `node_modules` of its own, so it shares your project's `@playwright/test` copy. **Do not** use a live dev-checkout symlink (`file:` path pointing at the crxbox working tree) — that ships crxbox's own `node_modules` and triggers the `loader/duplicate-playwright` crash.
+
+---
+
+## Requirements
+
+- **Node 18+**
+- **`@playwright/test`** (peer dependency)
+- **Chromium** — installed via Playwright (`npx playwright install chromium`). Extensions only load in Playwright's bundled Chromium, in a persistent context. crxbox handles the launch for you.
+- **Your extension built to an unpacked folder** — a directory containing `manifest.json` (e.g. `dist/`). crxbox loads it; it does not build it.
+- crxbox is **ESM-only**. If your project's `package.json` is `"type": "commonjs"`, name your Playwright config and spec files `.mjs` / `.mts` (e.g. `playwright.config.mjs`, `e2e/popup.spec.mjs`), or set `"type": "module"`, so crxbox loads as real ESM.
+- **One `@playwright/test` instance.** crxbox and your project must share the same resolved copy of `@playwright/test`. Consume crxbox as a published or `npm pack`ed tarball — not a live dev-checkout symlink that ships its own `node_modules`. crxbox emits `loader/duplicate-playwright` if it detects a duplicate. See [`skill/SKILL.md` §1–2](skill/SKILL.md) for details.
 
 ## Getting started
 
@@ -200,9 +203,24 @@ export const expect = test.expect;
 
 crxbox ships a token-efficient skill file at **`node_modules/crxbox/skill/SKILL.md`** — the full API surface, canonical patterns, failure-code table, and anti-patterns in one file an agent can read to write correct tests without scanning source.
 
+## Debugging
+
+```bash
+npx playwright test --headed                  # watch tests run in a real browser window
+PWDEBUG=1 npx playwright test                 # open Playwright Inspector (step through each action)
+npx playwright test --trace on && npx playwright show-trace  # record a trace and open the viewer
+```
+
+crxbox forwards `--headed` / `PWDEBUG` / `channel` / `slowMo` from your Playwright config automatically — `use.launchOptions.slowMo` slows every action for easier observation.
+
+## Reference
+
+- **[`docs/API.md`](docs/API.md)** — complete API reference (all helpers, options, types, error codes)
+- **[`docs/fixture-extension.md`](docs/fixture-extension.md)** — annotated walkthrough of the built-in example extension (`fixtures/ext/`) and its integration tests — copy it as a starting point
+
 ## Scope
 
-**In v1:** loader + deterministic-ID/URL, popup, content-UI (flagship), background/service-worker (incl. forced kill), storage + matcher, structured diagnostics.
+**In v1:** loader + deterministic-ID/URL, popup, content-UI (flagship), background/service-worker (incl. forced kill), storage + matcher, windows/tabs helpers, structured diagnostics.
 
 **Not in v1 (roadmap):** message spy, cross-context trace viewer, side-panel support, an extension-aware recorder, and a live MCP server. See the design spec under `docs/superpowers/specs/`.
 
