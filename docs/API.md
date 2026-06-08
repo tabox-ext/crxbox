@@ -168,10 +168,8 @@ const popup = await ext.popup.openInWindow(win);
 await popup.getByRole('button', { name: 'Save window' }).click();
 await expect(ext.storage.local).toEventuallyHaveStorageValue(
   'savedCurrentWindow',
-  expect.arrayContaining([
-    expect.objectContaining({ url: 'https://example.com' }),
-    expect.objectContaining({ url: 'https://example.org' }),
-  ]),
+  // the fixture stores tabs.map(t => t.url) — an array of URL strings
+  expect.arrayContaining(['https://example.com', 'https://example.org']),
 );
 ```
 

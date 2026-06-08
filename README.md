@@ -78,7 +78,7 @@ pnpm playwright install chromium
 
 > **Not yet published to npm?** Install from a packed tarball — run `npm pack` in the crxbox repo once, then point at the resulting `.tgz` file:
 > ```bash
-> npm i -D /path/to/crxbox-0.1.0.tgz @playwright/test && npx playwright install chromium
+> npm i -D /path/to/crxbox-0.2.0.tgz @playwright/test && npx playwright install chromium
 > ```
 > A tarball has no `node_modules` of its own, so it shares your project's `@playwright/test` copy. **Do not** use a live dev-checkout symlink (`file:` path pointing at the crxbox working tree) — that ships crxbox's own `node_modules` and triggers the `loader/duplicate-playwright` crash.
 
