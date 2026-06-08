@@ -12,7 +12,7 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933?logo=node.js&logoColor=white)](https://nodejs.org)
 [![Built on Playwright](https://img.shields.io/badge/built%20on-Playwright-2EAD33?logo=playwright&logoColor=white)](https://playwright.dev)
 
-📚 **[Documentation site →](https://tabox-ext.github.io/crxbox/)** &nbsp;·&nbsp; 📖 **[API reference →](docs/API.md)**
+📚 **[Documentation site →](https://tabox-ext.github.io/crxbox/)** &nbsp;·&nbsp; 📖 **[API reference →](docs/api.md)**
 
 </div>
 
@@ -188,7 +188,7 @@ Every test receives `ext`, your extension-aware handle:
 | **Drag-and-drop** | `ext.dragAndDrop(source, target, opts?)` | Robust pointer DnD that trips activation-distance sensors (dnd-kit, react-dnd). Use instead of `locator.dragTo()`. |
 | **Update / migration** *(experimental)* | `ext.simulateUpdate(opts?)` | Fires `chrome.runtime.onInstalled` to exercise update/migration logic. Version-sensitive; see fallback recipe in the API docs. |
 
-See **[`docs/API.md`](docs/API.md)** for full signatures, options, return types, patterns, and limitations.
+See **[`docs/api.md`](docs/api.md)** for full signatures, options, return types, patterns, and limitations.
 
 ## Structured, machine-readable failures
 
@@ -200,7 +200,7 @@ content-ui readiness timeout
   hint: the root selector never appeared in the expected frame — check the content script matches/run_at, or pass { frame } if it injects into an iframe.
 ```
 
-Read `err.diagnostic.code` to branch programmatically. The full code → meaning → fix table is in [`docs/API.md`](docs/API.md#error-handling).
+Read `err.diagnostic.code` to branch programmatically. The full code → meaning → fix table is in [`docs/api.md`](docs/api.md#error-handling).
 
 ## Bring your own Playwright (composable fixtures)
 
@@ -230,8 +230,8 @@ crxbox forwards `--headed` / `PWDEBUG` / `channel` / `slowMo` from your Playwrig
 
 ## Reference
 
-- **[`docs/API.md`](docs/API.md)** — complete API reference (all helpers, options, types, error codes)
-- **[`docs/fixture-extension.md`](docs/fixture-extension.md)** — annotated walkthrough of the built-in example extension (`fixtures/ext/`) and its integration tests — copy it as a starting point
+- **[`docs/api.md`](docs/api.md)** — complete API reference (all helpers, options, types, error codes)
+- **[`docs/guides/fixture-extension.md`](docs/guides/fixture-extension.md)** — annotated walkthrough of the built-in example extension (`fixtures/ext/`) and its integration tests — copy it as a starting point
 
 ## Scope
 
