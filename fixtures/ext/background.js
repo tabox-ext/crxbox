@@ -17,4 +17,11 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     );
     return true;
   }
+  if (msg?.type === 'SAVE_WINDOW') {
+    chrome.tabs.query({ windowId: msg.windowId }).then((tabs) => {
+      const urls = tabs.map((t) => t.url);
+      chrome.storage.local.set({ savedWindow: urls }).then(() => sendResponse({ ok: true, count: urls.length }));
+    });
+    return true; // async response
+  }
 });
