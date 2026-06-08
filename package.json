@@ -12,13 +12,8 @@
     },
     "./skill/SKILL.md": "./skill/SKILL.md"
   },
-  "files": [
-    "dist",
-    "skill"
-  ],
-  "engines": {
-    "node": ">=18"
-  },
+  "files": ["dist", "skill"],
+  "engines": { "node": ">=18" },
   "scripts": {
     "build": "tsup",
     "test:unit": "vitest run",
@@ -28,9 +23,7 @@
     "check:size": "node scripts/check-size.mjs",
     "prepublishOnly": "npm run build"
   },
-  "peerDependencies": {
-    "@playwright/test": ">=1.40.0"
-  },
+  "peerDependencies": { "@playwright/test": ">=1.40.0" },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
     "@playwright/test": "^1.49.0",
