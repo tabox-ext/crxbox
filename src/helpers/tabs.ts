@@ -11,9 +11,16 @@ export interface TabInfo {
   index: number;
 }
 
-/** Resolve a bare extension path to a full URL; pass through real URLs and about:blank. */
+/**
+ * Resolve a seed URL. Anything that already carries a URI scheme — `https://`,
+ * `chrome-extension://`, but also schemeless-but-absolute forms like `data:`,
+ * `about:` (e.g. `about:blank`), and `blob:` — is passed through untouched. Only a
+ * truly schemeless bare path (e.g. `options.html`) is resolved against the extension
+ * origin via `ext.url`. (Requiring `://` previously mangled `data:`/`blob:` seeds into
+ * `chrome-extension://<id>/data:…`, which made tab capture hang.)
+ */
 export function toUrl(ext: Ext, u: string): string {
-  if (u === 'about:blank' || /^[a-z][a-z0-9+.-]*:\/\//i.test(u)) return u;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(u)) return u;
   return ext.url(u);
 }
 
