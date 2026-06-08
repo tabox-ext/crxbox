@@ -39,4 +39,4 @@ you the extension-aware helpers.
 
 - [API Reference](/api) — every method on the `ext` fixture, the matchers, and error codes.
 - [Fixture extension guide](/guides/fixture-extension) — the test extension crxbox uses.
-- [Dogfooding with tabox](/guides/dogfood-tabox) — a real-world usage walkthrough.
+- [CI integration](/guides/ci) — run your crxbox suite on GitHub Actions, GitLab CI, CircleCI, and Jenkins.
