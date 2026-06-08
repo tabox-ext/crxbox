@@ -1,4 +1,5 @@
 import { test, expect, EXT_PATH } from './_setup.js';
+import { CrxboxError } from '../../src/index.js';
 
 test.use({ extensionPath: EXT_PATH });
 
@@ -21,4 +22,18 @@ test('tabs.query returns descriptors and tabs.close removes a tab', async ({ ext
   await ext.tabs.close(page);
   const after = await ext.tabs.query({ url: ext.url('options.html') });
   expect(after.length).toBe(before.length - 1);
+});
+
+test('tabs.close accepts a numeric id', async ({ ext }) => {
+  await ext.tabs.create('options.html');
+  const [info] = await ext.tabs.query({ url: ext.url('options.html') });
+  await ext.tabs.close(info!.id!);
+  const after = await ext.tabs.query({ url: ext.url('options.html') });
+  expect(after.length).toBe(0);
+});
+
+test('tabs.close throws tabs/not-found for an unknown id', async ({ ext }) => {
+  const err = await ext.tabs.close(999_999).catch((e) => e);
+  expect(err).toBeInstanceOf(CrxboxError);
+  expect(err.diagnostic.code).toBe('tabs/not-found');
 });

@@ -28,7 +28,15 @@ export class TabsHelper {
   async create(url: string, opts?: { windowId?: number; active?: boolean }): Promise<Page> {
     const target = toUrl(this.ext, url);
     const opened = this.ext.context.waitForEvent('page', {
-      predicate: (p) => p.url() === target || p.url().startsWith(target),
+      predicate: (p) => {
+        const u = p.url();
+        return (
+          u === target ||
+          u === target + '/' ||
+          u.startsWith(target + '?') ||
+          u.startsWith(target + '#')
+        );
+      },
       timeout: 10_000,
     });
     await this.ext.background.evaluate(
@@ -55,7 +63,12 @@ export class TabsHelper {
     return tabs as TabInfo[];
   }
 
-  /** Close a tab by its Playwright `Page` (matched by URL) or by numeric tab id. */
+  /**
+   * Close a tab by its Playwright `Page` (matched by URL) or by numeric tab id.
+   * When matching by Page, the first open tab whose URL equals `page.url()` is
+   * closed — if several tabs share that URL, prefer closing by numeric id
+   * (from `query()`). Throws `tabs/not-found` if no tab matches.
+   */
   async close(tab: Page | number): Promise<void> {
     let tabId: number | undefined;
     if (typeof tab === 'number') {
@@ -66,6 +79,16 @@ export class TabsHelper {
       tabId = all.find((t) => t.url === url)?.id;
       if (tabId === undefined) throw new CrxboxError({ code: 'tabs/not-found', url });
     }
-    await this.ext.background.evaluate((id) => chrome.tabs.remove(id), tabId);
+    const removed = await this.ext.background.evaluate(async (id) => {
+      try {
+        await chrome.tabs.remove(id);
+        return { ok: true as const };
+      } catch (e) {
+        return { ok: false as const, error: e instanceof Error ? e.message : String(e) };
+      }
+    }, tabId);
+    if (!removed.ok) {
+      throw new CrxboxError({ code: 'tabs/not-found', tabId, cause: removed.error });
+    }
   }
 }
