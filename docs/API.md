@@ -7,6 +7,9 @@ Complete reference for crxbox's public API. For install and a guided getting-sta
 - [The `ext` fixture](#the-ext-fixture)
   - [`ext.id` / `ext.url()`](#extid--exturl)
   - [`ext.popup`](#extpopup)
+  - [`ext.openPage()`](#extopenpath-opts)
+  - [`ext.acceptDialogs()`](#extacceptdialogpage)
+  - [`ext.dragAndDrop()`](#extdragandropsource-target-opts)
   - [`ext.contentUi()`](#extcontentui)
   - [`ext.background`](#extbackground)
   - [`ext.storage`](#extstorage)
@@ -26,6 +29,7 @@ crxbox is configured with Playwright fixture **options**. Set them with `test.us
 |--------|------|----------|-------------|
 | `extensionPath` | `string` | **yes** | Path to the built, unpacked extension — the directory containing `manifest.json`. Resolved relative to the cwd. |
 | `extensionKey` | `string` | no | **Reserved.** A future deterministic-extension-ID feature. **Not wired in v1 — setting it has no effect.** |
+| `popupViewport` | `{ width: number; height: number }` | no | Default viewport for `ext.popup.open()`. See [viewport resolution](#extpopupopen-options). |
 
 ```ts
 import { test } from 'crxbox';
@@ -33,6 +37,8 @@ test.use({ extensionPath: './dist' });
 ```
 
 crxbox launches a **persistent Chromium context** (required for extensions) using Playwright's bundled `chromium` channel, loads your unpacked extension, resolves its ID from the service-worker URL, and **clears all `chrome.storage` areas between tests** so each test starts clean.
+
+**Launch config forwarding.** crxbox forwards Playwright's resolved launch configuration automatically — `headless` / `--headed`, `PWDEBUG`, `channel`, `slowMo`, and `use.launchOptions` are all honored. Caller `args` (from `use.launchOptions.args`) are **appended** to crxbox's two required extension flags (`--disable-extensions-except` and `--load-extension`) rather than replacing them.
 
 ---
 
@@ -89,17 +95,38 @@ ext.url('/options.html');     // same normalization
 
 Two clearly-separated modes — see [Limitations](#popup-modes) for why.
 
-#### `ext.popup.open(popupPath?)` → `Promise<Page>`
+#### `ext.popup.open(popupPath?, opts?)` → `Promise<Page>`
 
 Opens the popup **as a normal page** for logic/UI assertions (covers ~90% of popup tests). Returns the Playwright `Page`.
 
 - When `popupPath` is **omitted**, crxbox resolves it from the manifest (`action.default_popup`, then MV2 `browser_action.default_popup`, falling back to `popup.html`). Pass a path to override.
 - Caveat: because the popup opens in its own tab, `chrome.tabs.query({active:true})` inside it returns the popup's own tab — not the page you navigated. To test active-tab wiring, use `openForTab` (or have your popup accept a `?tabId=` param).
 
+<a id="extpopupopen-options"></a>**`opts` (`PopupOpenOptions`):**
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `viewport` | `{ width: number; height: number }` | — | Size the popup page to mimic a real Chrome action popup's small dimensions. |
+
+**Viewport resolution order** (first defined wins):
+
+1. `opts.viewport` — per-call override.
+2. `popupViewport` fixture option (`test.use({ popupViewport: { width, height } })`) — project or file default.
+3. Playwright's default viewport (1280×720) — if neither is set.
+
+Real Chrome action popups have small, constrained dimensions (typically around 400×600). For layout-sensitive assertions, pass a realistic `viewport` or pin it globally with `popupViewport`. Note that `openForTab()` does **not** accept a `viewport` option — Chrome controls the real popup window bounds.
+
 ```ts
-const popup = await ext.popup.open();               // manifest default
-const popup2 = await ext.popup.open('options.html'); // explicit
+const popup = await ext.popup.open();                              // manifest default, default viewport
+const popup2 = await ext.popup.open('options.html');               // explicit path
+const popup3 = await ext.popup.open(undefined, { viewport: { width: 400, height: 600 } }); // mimic real popup size
 await expect(popup.getByRole('button', { name: 'Save' })).toBeVisible();
+```
+
+```ts
+// Pin globally — every open() in this file will use 400×600
+test.use({ popupViewport: { width: 400, height: 600 } });
+const popup = await ext.popup.open(); // uses 400×600
 ```
 
 #### `ext.popup.openForTab(activeTab, popupPath?)` → `Promise<Page>`
@@ -111,6 +138,20 @@ Drives the **real action/toolbar popup** from the service worker (`chrome.action
 
 ```ts
 const popup = await ext.popup.openForTab(page);
+```
+
+### `ext.openPage(path, opts?)`
+
+Open any extension page (options page, full-page view, sandbox) as a normal `Page` — the neutral sibling of `popup.open()` for non-popup pages.
+
+**Signature:** `openPage(path: string, opts?: { viewport?: { width: number; height: number } }): Promise<Page>`
+
+Navigates a new tab to `chrome-extension://<id>/<path>` and returns the `Page`. Optionally resizes the viewport before navigation.
+
+```ts
+const options = await ext.openPage('options.html');
+const options2 = await ext.openPage('options.html', { viewport: { width: 800, height: 600 } });
+await options.getByRole('button', { name: 'Save Settings' }).click();
 ```
 
 ### `ext.contentUi()`
@@ -154,6 +195,48 @@ await expect(frameUi.getByRole('button', { name: 'Open' })).toBeVisible();
 
 Failure modes: a missing `<iframe>` element → [`content-ui/wrong-frame`](#error-handling); a root that never appears → [`content-ui/not-injected`](#error-handling). Both diagnostics include `sawFrames` (the URLs of frames the page actually had) and `waitedMs`.
 
+### `ext.acceptDialogs(page)`
+
+Attach a handler that auto-accepts every dialog (`confirm`, `alert`, `prompt`) on a page. Returns a disposer `() => void` that detaches the handler.
+
+**Signature:** `acceptDialogs(page: Page): () => void`
+
+Playwright's default is to dismiss unhandled dialogs, so `window.confirm(...)` returns `false` and silently aborts destructive actions. Call `ext.acceptDialogs(page)` before clicking a button that shows a confirmation dialog.
+
+```ts
+const detach = ext.acceptDialogs(popup);
+await popup.getByRole('button', { name: 'Delete All' }).click();
+// … assert the action completed …
+detach(); // stop accepting dialogs
+```
+
+> **Pair with the async write-through caveat:** destructive actions often write to storage asynchronously. After clicking, use `expect.poll` (not `toHaveStorageValue`) to wait for the write to settle.
+
+### `ext.dragAndDrop(source, target, opts?)`
+
+Robust pointer drag from `source` to `target` that reliably trips activation-distance sensors (dnd-kit, react-dnd, and similar) where Playwright's `locator.dragTo()` issues a single move event and no-ops.
+
+**Signature:** `dragAndDrop(source: Locator, target: Locator, opts?: DragOptions): Promise<void>`
+
+The sequence is: press → nudge past the activation distance → stepped glide onto the target → settle past center → release.
+
+**`DragOptions`:**
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `steps` | `number` | `12` | Intermediate move events while gliding onto the target. |
+| `nudge` | `number` | `8` | Pixels to nudge past the source center to exceed an activation distance. |
+| `settle` | `number` | `4` | Pixels of final settle past the target center. |
+
+```ts
+const item = popup.locator('[data-drag-handle]').first();
+const slot = popup.locator('[data-drop-slot="2"]');
+await ext.dragAndDrop(item, slot);              // defaults (steps=12, nudge=8, settle=4)
+await ext.dragAndDrop(item, slot, { steps: 20 }); // slower glide for stricter sensors
+```
+
+Throws `drag/no-bounding-box` when either locator is not visible or attached, and `drag/cross-page` when `source` and `target` belong to different pages.
+
 ### `ext.background`
 
 The MV3 service worker.
@@ -190,10 +273,20 @@ Inspect and manipulate `chrome.storage`. Implemented by evaluating in the servic
 
 `ext.storage.clearAll(): Promise<void>` clears all three areas — crxbox calls this automatically before each test, so storage is isolated per test.
 
+> **`get(key)` returns the unwrapped value.** `chrome.storage` natively returns `{ key: value }` wrapper objects; crxbox unwraps for you, so `get('collections')` returns the array directly (not `{ collections: [...] }`). Without a key, the full area object is returned.
+
+**Seeding app state before `popup.open()`:** set storage values first, then open the popup so the extension reads pre-seeded state:
+
+```ts
+await ext.storage.local.set({ theme: 'dark', items: [{ id: 1 }] });
+const popup = await ext.popup.open();
+await expect(popup.getByTestId('theme-toggle')).toHaveAttribute('data-value', 'dark');
+```
+
 ```ts
 await ext.storage.local.set({ collections: [{ name: 'a' }] });
 const all = await ext.storage.local.get();              // { collections: [...] }
-const one = await ext.storage.local.get('collections'); // [...]
+const one = await ext.storage.local.get('collections'); // [...]  (unwrapped, not { collections: [...] })
 await ext.storage.session.clear();
 ```
 
@@ -242,12 +335,15 @@ try {
 |------|-------------|-----|
 | `loader/build-not-found` | `extensionPath` is empty or has no `manifest.json` | Point `extensionPath` at a built, unpacked extension. |
 | `loader/sw-timeout` | No MV3 service worker registered after load | Check `background.service_worker` in the manifest. |
+| `loader/duplicate-playwright` | Two `@playwright/test` copies were resolved (crxbox vs. consumer) | Consume crxbox as a published or `npm pack`ed tarball; do not live-symlink a dev checkout that ships its own `node_modules`. Dedupe so only one `@playwright/test` exists on disk. |
 | `popup/no-active-tab` | `openForTab()` couldn't open the popup | Pass the navigated page; run headed; the real `openPopup` error is in `cause`. |
 | `content-ui/not-injected` | The `root` selector never appeared | Check the content script `matches`/`run_at`; pass `{ frame }` for iframe UI. |
 | `content-ui/wrong-frame` | The target `<iframe>` element never appeared | Fix the `{ frame }` selector to match the hosting iframe. |
 | `background/restart-timeout` | The SW didn't become ready in time | The worker may be crashing on startup; check its console. |
 | `background/eval-failed` | `evaluate()` threw inside the worker | See `cause`; remember the SW has no DOM. |
 | `storage/key-absent` | `toHaveStorageValue` found no value at `key` | Confirm the write happened and the area (local/sync/session) is correct. |
+| `drag/no-bounding-box` | `dragAndDrop` source or target has no bounding box | Ensure the locator resolves to a single visible, attached element before dragging. |
+| `drag/cross-page` | `dragAndDrop` source and target belong to different pages | `dragAndDrop` operates within a single page; both locators must come from the same `Page`. |
 
 ---
 
@@ -308,5 +404,7 @@ await expect.poll(() => ext.storage.local.get('saved')).toEqual(
 - **`shadow` is intent-only.** Playwright always pierces *open* shadow DOM. Closed shadow roots are not accessible.
 - **`extensionKey` is reserved** and currently a no-op (no deterministic-ID injection yet).
 - **`toHaveStorageValue` does not poll** — use `expect.poll` for async writes.
-- **ESM-only**, Node 18+. `@playwright/test` is a peer dependency.
+- **ESM-only**, Node 18+. `@playwright/test` is a peer dependency. If your project's `package.json` is `"type": "commonjs"`, name your config and spec files `.mjs` / `.mts` (or set `"type": "module"`) so crxbox loads as real ESM and avoids an `ERR_REQUIRE_ESM`-class error. Example: `playwright.config.mjs`, `e2e/popup.spec.mjs`.
+- **One `@playwright/test` instance.** crxbox and its consumer must share the same resolved copy of `@playwright/test`. Consume crxbox as a published or `npm pack`ed tarball (not a live dev-checkout symlink that ships its own `node_modules`); crxbox emits `loader/duplicate-playwright` when it detects a duplicate.
+- **Testability boundaries.** Two known limits: (1) features that require "the current browser window's tabs" (e.g. "save all open tabs") can't be driven faithfully with `popup.open()` — the popup-as-page is not bound to a real browsing window; use `openForTab()` for those cases, accepting its best-effort constraints. (2) Load-time data-repair migrations gated behind extension-update flows (manifest `"update_url"` + version bump) are not reachable via storage-seeding + `popup.open()`.
 - **Out of scope in v1** (roadmap): message spy, cross-context trace viewer, side-panel support, recorder, MCP server, and `ext.background.logs()`.

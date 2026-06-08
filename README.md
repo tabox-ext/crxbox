@@ -62,7 +62,8 @@ They operate at **different layers and are complementary**: use Storybook (or Vi
 - **`@playwright/test`** (peer dependency)
 - **Chromium** — installed via Playwright (`npx playwright install chromium`). Extensions only load in Playwright's bundled Chromium, in a persistent context. crxbox handles the launch for you.
 - **Your extension built to an unpacked folder** — a directory containing `manifest.json` (e.g. `dist/`). crxbox loads it; it does not build it.
-- crxbox is **ESM-only**.
+- crxbox is **ESM-only**. If your project's `package.json` is `"type": "commonjs"`, name your Playwright config and spec files `.mjs` / `.mts` (e.g. `playwright.config.mjs`, `e2e/popup.spec.mjs`), or set `"type": "module"`, so crxbox loads as real ESM.
+- **One `@playwright/test` instance.** crxbox and your project must share the same resolved copy of `@playwright/test`. Consume crxbox as a published or `npm pack`ed tarball — not a live dev-checkout symlink that ships its own `node_modules`. crxbox emits `loader/duplicate-playwright` if it detects a duplicate. See [`skill/SKILL.md` §1–2](skill/SKILL.md) for details.
 
 ## Install
 
@@ -161,10 +162,13 @@ Every test receives `ext`, your extension-aware handle:
 | Area | API | Notes |
 |------|-----|-------|
 | **ID / URL** | `ext.id` · `ext.url('page.html')` | The 32-char extension ID and `chrome-extension://…` URL builder. |
-| **Popup** | `ext.popup.open()` · `ext.popup.openForTab(page)` | `open()` defaults to the manifest's `action.default_popup`. `openForTab` is best-effort (Chrome 127+, headed). |
+| **Popup** | `ext.popup.open(path?, opts?)` · `ext.popup.openForTab(page)` | `open()` defaults to the manifest's `action.default_popup`. Pass `{ viewport }` or set `popupViewport` to mimic real popup dimensions. `openForTab` is best-effort (Chrome 127+, headed). |
+| **Extension pages** | `ext.openPage(path, opts?)` | Opens options pages, full-page views, and sandbox pages as a normal `Page`. Accepts `{ viewport }`. |
 | **Content UI** (flagship) | `await ext.contentUi(page, { root, shadow?, frame? })` | Awaits injection; pierces open Shadow DOM; scopes into iframes; then `.getByRole/.getByText/.locator`. |
 | **Background / SW** | `ext.background.evaluate / sendMessage / waitForReady / kill()` | Evaluate in the worker, message it, and **forcibly restart** it to test MV3 resilience. |
-| **Storage** | `ext.storage.local\|sync\|session` `.get/.set/.clear` + `toHaveStorageValue` | Auto-reset between tests. |
+| **Storage** | `ext.storage.local\|sync\|session` `.get/.set/.clear` + `toHaveStorageValue` | Auto-reset between tests. `get(key)` returns the unwrapped value (not `{ key: value }`). |
+| **Dialogs** | `ext.acceptDialogs(page)` | Auto-accepts `confirm`/`alert`/`prompt`; returns a disposer. Playwright otherwise dismisses dialogs, silently aborting destructive actions. |
+| **Drag-and-drop** | `ext.dragAndDrop(source, target, opts?)` | Robust pointer DnD that trips activation-distance sensors (dnd-kit, react-dnd). Use instead of `locator.dragTo()`. |
 
 See **[`docs/API.md`](docs/API.md)** for full signatures, options, return types, patterns, and limitations.
 
