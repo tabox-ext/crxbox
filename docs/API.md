@@ -7,6 +7,9 @@ Complete reference for crxbox's public API. For install and a guided getting-sta
 - [The `ext` fixture](#the-ext-fixture)
   - [`ext.id` / `ext.url()`](#extid--exturl)
   - [`ext.popup`](#extpopup)
+    - [`ext.popup.open()`](#extpopupopenpopuppath-opts--promisepage)
+    - [`ext.popup.openForTab()`](#extpopupopenfortabactivetab-popuppath--promisepage)
+    - [`ext.popup.openInWindow()`](#extpopupopeninwindowwindow-popuppath-opts--promisepage)
   - [`ext.openPage()`](#extopenpath-opts)
   - [`ext.acceptDialogs()`](#extacceptdialogpage)
   - [`ext.dragAndDrop()`](#extdragandropsource-target-opts)
@@ -96,7 +99,7 @@ ext.url('/options.html');     // same normalization
 
 ### `ext.popup`
 
-Two clearly-separated modes — see [Limitations](#popup-modes) for why.
+Three clearly-separated modes — see [Limitations](#popup-modes) for when to use each.
 
 #### `ext.popup.open(popupPath?, opts?)` → `Promise<Page>`
 
@@ -136,11 +139,40 @@ const popup = await ext.popup.open(); // uses 400×600
 
 Drives the **real action/toolbar popup** from the service worker (`chrome.action.openPopup()`) so it binds to the active tab, and returns the popup `Page`.
 
-- **Best-effort.** Requires **Chrome 127+** and a **focused window** (crxbox focuses the last-focused window for you). The popup closes on blur, and in new headless Chromium the popup `page` event is known to be flaky — prefer running such specs **headed**. Throws `popup/no-active-tab` (with the real `openPopup` error in `cause`) if it can't open.
+- **Best-effort / headed-only.** Requires **Chrome 127+** and a **focused window** (crxbox focuses the window containing `activeTab` for you). The popup closes on blur, and in new-headless Chromium `chrome.action.openPopup` reliably takes the `popup/no-active-tab` throw path even after a successful focus — prefer running such specs **headed**. Throws `popup/no-active-tab` (with the real `openPopup` error in `cause`) if it can't open.
 - `popupPath` defaults to the manifest popup as with `open()`.
+- For testing current-window logic in headless, use [`openInWindow`](#extpopupopeninwindowwindow-popuppath-opts--promisepage) instead.
 
 ```ts
 const popup = await ext.popup.openForTab(page);
+```
+
+#### `ext.popup.openInWindow(window, popupPath?, opts?)` → `Promise<Page>`
+
+**The headless-friendly way to test "save the current window's tabs" / active-window flows.**
+
+Opens the popup **as a tab inside `window`** (a `WindowHandle` or a chrome window id). Because the popup lives in that window, its `chrome.tabs.query({ currentWindow: true })` resolves to that window's tabs — without needing `chrome.action.openPopup`. Defaults to the manifest's `action.default_popup` when `popupPath` is omitted.
+
+**`opts` (`PopupOpenOptions`):** same as [`open()`](#extpopupopen-options) — pass `{ viewport }` or rely on the `popupViewport` fixture option.
+
+**Caveats:**
+
+- The popup's own tab appears in current-window results — assert with `expect.arrayContaining(...)` or filter out extension pages when checking what the popup "saved".
+- A `viewport` is applied **after** the page loads (navigation is driven by `chrome.tabs.create`). Layout code that reads the viewport on load will see Playwright's default (1280×720), not the configured size.
+- The popup is opened as the window's **active tab** by Chrome's default, so `chrome.tabs.query({ active: true, currentWindow: true })` returns the popup tab.
+
+```ts
+// Seed a window, open the popup inside it, assert the popup saved those tabs
+const win = await ext.windows.create({ tabs: ['https://example.com', 'https://example.org'] });
+const popup = await ext.popup.openInWindow(win);
+await popup.getByRole('button', { name: 'Save window' }).click();
+await expect(ext.storage.local).toEventuallyHaveStorageValue(
+  'savedCurrentWindow',
+  expect.arrayContaining([
+    expect.objectContaining({ url: 'https://example.com' }),
+    expect.objectContaining({ url: 'https://example.org' }),
+  ]),
+);
 ```
 
 ### `ext.openPage(path, opts?)`
@@ -528,6 +560,7 @@ try {
 | `simulate-update/unavailable` | `simulateUpdate()` found `chrome.runtime.onInstalled.dispatch` absent | The Chromium event-binding internal is missing in this build — use the seed-and-drive fallback instead (seed pre-update storage, call the migration entry point directly). |
 | `window/create-failed` | `ext.windows.create()` — `chrome.windows.create` returned no window id or threw | Check that the `tabs` URLs are valid and the extension has the `windows` or `tabs` permission. The underlying error is in `diagnostic.cause`. |
 | `tabs/not-found` | `ext.tabs.close()` — no open tab matched the given `Page` URL or numeric tab id | The tab may have already been closed, or multiple tabs share the URL; close by numeric id (from `ext.tabs.query()`) for an unambiguous match. |
+| `tabs/create-failed` | `ext.tabs.create()` (or `ext.popup.openInWindow()`) — `chrome.tabs.create` rejected, or the tab never opened within 10 s | Check the URL is loadable (extension pages work offline) and that any `windowId` refers to a real, open window. The underlying error is in `diagnostic.cause`. |
 
 ---
 
@@ -591,11 +624,11 @@ await expect.poll(() => ext.storage.local.get('saved')).toEqual(
 ## Limitations & notes
 
 - **Chromium-only, persistent context.** Extensions only work in Playwright's bundled `chromium` channel; crxbox launches a persistent context for you. Headless works (new headless), but see the popup note below.
-- <a id="popup-modes"></a>**Two popup modes are different things.** `open()` (popup-as-page) is reliable and covers most assertions but the popup's "active tab" is itself. `openForTab()` exercises the real toolbar popup but is best-effort (Chrome 127+, focused window, flaky in new headless — run headed).
+- <a id="popup-modes"></a>**Three popup modes are different things.** `open()` (popup-as-page) is reliable and covers most assertions but the popup's "active tab" is itself. `openInWindow(window)` places the popup as a tab in a seeded window — the headless-friendly way to test current-window queries. `openForTab()` exercises the real toolbar popup but is best-effort (Chrome 127+, focused window, headed-only for reliability).
 - **`shadow` is intent-only.** Playwright always pierces *open* shadow DOM. Closed shadow roots are not accessible.
 - **`extensionKey` is reserved** and currently a no-op (no deterministic-ID injection yet).
 - **`toHaveStorageValue` does not poll** — use `expect.poll` for async writes.
 - **ESM-only**, Node 18+. `@playwright/test` is a peer dependency. If your project's `package.json` is `"type": "commonjs"`, name your config and spec files `.mjs` / `.mts` (or set `"type": "module"`) so crxbox loads as real ESM and avoids an `ERR_REQUIRE_ESM`-class error. Example: `playwright.config.mjs`, `e2e/popup.spec.mjs`.
 - **One `@playwright/test` instance.** crxbox and its consumer must share the same resolved copy of `@playwright/test`. Consume crxbox as a published or `npm pack`ed tarball (not a live dev-checkout symlink that ships its own `node_modules`); crxbox emits `loader/duplicate-playwright` when it detects a duplicate.
-- **Testability boundaries.** Two known limits: (1) features that require "the current browser window's tabs" (e.g. "save all open tabs") can't be driven faithfully with `popup.open()` — the popup-as-page is not bound to a real browsing window; use `openForTab()` for those cases, accepting its best-effort constraints. (2) Load-time data-repair migrations gated behind extension-update flows (manifest `"update_url"` + version bump) are not reachable via storage-seeding + `popup.open()`.
+- **Testability boundaries.** Two known limits: (1) features that require "the current browser window's tabs" (e.g. "save all open tabs") can't be driven faithfully with `popup.open()` — the popup-as-page is not bound to a real browsing window; use [`openInWindow()`](#extpopupopeninwindowwindow-popuppath-opts--promisepage) for headless current-window flows, or `openForTab()` (headed) when you also need the real toolbar popup binding. (2) Load-time data-repair migrations gated behind extension-update flows (manifest `"update_url"` + version bump) are not reachable via storage-seeding + `popup.open()`.
 - **Out of scope in v1** (roadmap): message spy, cross-context trace viewer, side-panel support, recorder, MCP server, and `ext.background.logs()`.

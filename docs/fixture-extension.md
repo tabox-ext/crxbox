@@ -11,7 +11,7 @@ Use it as a **copy-and-adapt reference** when writing tests for your own extensi
 | File | Role |
 |------|------|
 | `manifest.json` | MV3 manifest: declares the popup, background service worker, content script (`<all_urls>`), permissions (`storage`, `tabs`, `activeTab`), and a web-accessible `iframe.html`. |
-| `popup.html` / `popup.js` | Toolbar popup: a single-page UI tested via `ext.popup.open()`. |
+| `popup.html` / `popup.js` | Toolbar popup: a single-page UI tested via `ext.popup.open()`. Includes a **"Save window"** button that calls `chrome.tabs.query({ currentWindow: true })` and writes the result to `chrome.storage.local` under `savedCurrentWindow` — used by the `openInWindow` integration tests to verify current-window query resolution. |
 | `background.js` | Background service worker: responds to messages (e.g. `SAVE`, `SAVE_WINDOW`), stores data in `chrome.storage.local`, and has an `onInstalled` listener used to test `ext.simulateUpdate()`. *Note: that listener deliberately ignores the real first-`install` event so it only records simulated `'update'`s — a test-specific guard, not something to copy verbatim into a real extension.* |
 | `content.js` | Content script injected at `document_idle` into every page. Injects **two** UI surfaces: (1) a Shadow-DOM root (`<div data-ext-root="shadow">` with an open shadow root containing a "Save article" button) and (2) an `<iframe data-ext-frame>` pointing at `iframe.html` (the iframe-hosted UI). |
 | `iframe.html` | The iframe page loaded by `content.js`; hosts a `[data-ext-root="iframe"]` element with a "Save from iframe" button. |
@@ -61,7 +61,7 @@ These tests run against the real `fixtures/ext/` extension in a real Chromium �
 
 | Spec | Helper exercised |
 |------|-----------------|
-| `popup.spec.ts` | `ext.popup.open()`, `popup.openForTab()` |
+| `popup.spec.ts` | `ext.popup.open()`, `popup.openForTab()`, `popup.openInWindow()` |
 | `popup-viewport.spec.ts` | `popup.open({ viewport })`, `popupViewport` fixture option |
 | `open-page.spec.ts` | `ext.openPage()` |
 | `storage.spec.ts` | `ext.storage.local/sync/session` get/set/clear, auto-reset |

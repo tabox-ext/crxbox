@@ -4,6 +4,19 @@ All notable changes to crxbox are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-06-08
+
+### Added
+- `ext.popup.openInWindow(window, popupPath?, opts?)` — open the popup as a tab inside a seeded
+  window so its `chrome.tabs.query({currentWindow:true})` resolves to that window; the
+  headless-friendly way to test "save the current window's tabs" / active-window flows.
+- Diagnostic `tabs/create-failed` — `ext.tabs.create` now raises a structured error instead of a
+  silent timeout / generic eval failure.
+
+### Changed
+- `ext.popup.openForTab` focuses the window containing `activeTab` (deterministic) and is
+  documented as headed-only for real-toolbar-popup fidelity; use `openInWindow` in headless.
+
 ## [0.1.0] - 2026-06-08
 
 ### Added

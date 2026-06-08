@@ -17,7 +17,7 @@ Composable form: `base.extend(createExtensionFixtures({ path: './dist' }))`.
 
 ## Helpers (`ext` fixture)
 - **ID/URL:** `ext.id`, `ext.url('popup.html')`.
-- **Popup:** `await ext.popup.open(popupPath?, opts?)` → Page (logic/UI, the reliable default, ~90%). With no arg it auto-resolves the popup path from the manifest's `action.default_popup`; pass a path to override. `opts.viewport` sizes the page; fixture option `popupViewport` sets a project-wide default. `await ext.popup.openForTab(page)` → verify active-tab wiring; best-effort only (needs Chrome 127+, a focused window, flaky in new headless) — prefer `open()`. `openForTab` does NOT accept a `viewport` option.
+- **Popup:** `await ext.popup.open(popupPath?, opts?)` → Page (logic/UI, the reliable default, ~90%). With no arg it auto-resolves the popup path from the manifest's `action.default_popup`; pass a path to override. `opts.viewport` sizes the page; fixture option `popupViewport` sets a project-wide default. `await ext.popup.openInWindow(window, popupPath?, opts?)` → Page — opens the popup as a tab inside `window` (a `WindowHandle` or numeric window id) so its `chrome.tabs.query({currentWindow:true})` resolves to that window's tabs; **the headless-friendly recipe for testing "save current window's tabs" / active-window flows**. Popup tab appears in current-window results — assert with `arrayContaining`. `await ext.popup.openForTab(page)` → real toolbar popup, **headed-only** for reliability (needs Chrome 127+, a focused window; in new-headless `chrome.action.openPopup` reliably fails — use `openInWindow` for headless current-window logic instead). `openForTab` does NOT accept a `viewport` option.
 - **Open any extension page:** `await ext.openPage(path, opts?)` → Page. Neutral sibling of `popup.open()` for options pages, full-page views, sandbox pages. Accepts `{ viewport }`.
 - **Content-UI (flagship):** `const ui = await ext.contentUi(page, { root, shadow?, frame?, timeout? })` — it is awaited; awaiting waits for the root to be injected. Then `ui.getByRole(...)` / `ui.getByText(...)` / `ui.locator(...)`. `shadow` documents intent only (Playwright always pierces open shadow DOM); use `frame` for iframe-hosted UI.
 - **Background/SW:** `await ext.background.evaluate(fn, arg)`, `.sendMessage(msg)` (sent from a real extension page, returns the SW response), `.waitForReady()`, `.kill()` (forced CDP termination — assert state survives a restart).
@@ -67,6 +67,7 @@ Use the matcher only when the write has already completed (e.g. an awaited round
 | `simulate-update/unavailable` | `onInstalled.dispatch` absent in this Chrome build — use the seed-and-drive fallback instead. |
 | `window/create-failed` | `ext.windows.create()` failed — check `diagnostic.cause` for the underlying error; ensure extension has the `tabs` permission and `tabs` URLs are valid. |
 | `tabs/not-found` | `ext.tabs.close()` found no tab matching the given Page URL or numeric id — the tab may already be closed; use `ext.tabs.query()` for unambiguous numeric id. |
+| `tabs/create-failed` | `ext.tabs.create()` (or `ext.popup.openInWindow()`) — `chrome.tabs.create` rejected or the tab never opened; check the URL is loadable and any `windowId` refers to a real window (`diagnostic.cause` has details). |
 
 ## Gotchas
 
@@ -140,7 +141,7 @@ const sandboxed = await ext.openPage('sandbox.html', { viewport: { width: 800, h
 ### §15 — Testability boundaries
 Two known limits beyond crxbox's current reach:
 
-1. **Window-bound tab operations.** "Save the current window's tabs" or similar features that depend on the popup being bound to a real browsing window can't be driven faithfully with `popup.open()` — the popup-as-page isn't attached to a real window. Use `openForTab()` for those, accepting its best-effort constraints.
+1. **Window-bound tab operations.** "Save the current window's tabs" or similar features that depend on the popup being bound to a real browsing window can't be driven faithfully with `popup.open()` — the popup-as-page isn't attached to a real window. Use `openInWindow(win)` (headless-friendly) or `openForTab()` (headed, real toolbar popup), accepting its best-effort constraints.
 2. **Extension-update migrations.** Load-time data-repair routines gated behind an extension version bump (the browser's extension-update flow) are now reachable via `ext.simulateUpdate()` (experimental, version-sensitive) or the seed-and-drive fallback pattern.
 
 ## Anti-patterns

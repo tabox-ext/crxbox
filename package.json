@@ -1,6 +1,6 @@
 {
   "name": "crxbox",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Playwright, but extension-aware. A lightweight toolkit for testing Chrome extensions.",
   "type": "module",
   "module": "./dist/index.js",

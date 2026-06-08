@@ -165,7 +165,7 @@ Every test receives `ext`, your extension-aware handle:
 | Area | API | Notes |
 |------|-----|-------|
 | **ID / URL** | `ext.id` · `ext.url('page.html')` | The 32-char extension ID and `chrome-extension://…` URL builder. |
-| **Popup** | `ext.popup.open(path?, opts?)` · `ext.popup.openForTab(page)` | `open()` defaults to the manifest's `action.default_popup`. Pass `{ viewport }` or set `popupViewport` to mimic real popup dimensions. `openForTab` is best-effort (Chrome 127+, headed). |
+| **Popup** | `ext.popup.open(path?, opts?)` · `ext.popup.openInWindow(win, path?)` · `ext.popup.openForTab(page)` | `open()` defaults to the manifest's `action.default_popup`. `openInWindow(win)` places the popup inside a seeded window — the headless path for "save current window's tabs" flows. `openForTab` is best-effort (Chrome 127+, headed). |
 | **Extension pages** | `ext.openPage(path, opts?)` | Opens options pages, full-page views, and sandbox pages as a normal `Page`. Accepts `{ viewport }`. |
 | **Content UI** (flagship) | `await ext.contentUi(page, { root, shadow?, frame? })` | Awaits injection; pierces open Shadow DOM; scopes into iframes; then `.getByRole/.getByText/.locator`. |
 | **Background / SW** | `ext.background.evaluate / sendMessage / waitForReady / kill()` | Evaluate in the worker, message it, and **forcibly restart** it to test MV3 resilience. |
