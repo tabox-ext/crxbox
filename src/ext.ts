@@ -1,4 +1,4 @@
-import type { BrowserContext, Page } from '@playwright/test';
+import type { BrowserContext, Dialog, Page } from '@playwright/test';
 import { BackgroundHelper } from './helpers/background.js';
 import { StorageHelper } from './helpers/storage.js';
 import { PopupHelper } from './helpers/popup.js';
@@ -40,6 +40,20 @@ export class Ext {
     if (opts?.viewport) await page.setViewportSize(opts.viewport);
     await page.goto(this.url(p));
     return page;
+  }
+
+  /**
+   * Auto-accept every dialog (confirm/alert/prompt) on a page. Extension flows
+   * gate destructive actions behind `window.confirm`; Playwright's default is to
+   * dismiss unhandled dialogs, silently aborting the action. Returns a disposer
+   * that detaches the handler.
+   */
+  acceptDialogs(page: Page): () => void {
+    const handler = (dialog: Dialog) => {
+      void dialog.accept();
+    };
+    page.on('dialog', handler);
+    return () => page.off('dialog', handler);
   }
 
   async contentUi(page: Page, opts: ContentUiOptions): Promise<ContentUi> {
