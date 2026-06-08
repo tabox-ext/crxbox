@@ -10,6 +10,7 @@ Complete reference for crxbox's public API. For install and a guided getting-sta
   - [`ext.openPage()`](#extopenpath-opts)
   - [`ext.acceptDialogs()`](#extacceptdialogpage)
   - [`ext.dragAndDrop()`](#extdragandropsource-target-opts)
+  - [`ext.simulateUpdate()` *(experimental)*](#extsimulateupdate-experimental)
   - [`ext.contentUi()`](#extcontentui)
   - [`ext.background`](#extbackground)
   - [`ext.storage`](#extstorage)
@@ -239,6 +240,49 @@ await ext.dragAndDrop(item, slot, { steps: 20 }); // slower glide for stricter s
 
 Throws `drag/no-bounding-box` when either locator is not visible or attached, and `drag/cross-page` when `source` and `target` belong to different pages.
 
+### `ext.simulateUpdate()` *(experimental)*
+
+Fire `chrome.runtime.onInstalled` with `reason: "update"` (or a caller-supplied reason) to exercise extension update / migration logic without a real browser-managed version bump.
+
+> **`@experimental`** — This helper relies on Chromium's `onInstalled.dispatch` event-binding internal, which is version-sensitive and not guaranteed by the Chrome extension API surface. It is confirmed to work on recent Chromium builds but may silently break on future versions. Throws `simulate-update/unavailable` if the internal is absent.
+
+**Signature:** `simulateUpdate(opts?: { reason?: string; previousVersion?: string }): Promise<void>`
+
+**`opts`:**
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `reason` | `string` | `'update'` | The `chrome.runtime.OnInstalledReason` string to fire. Typical values: `'update'`, `'install'`, `'chrome_update'`. |
+| `previousVersion` | `string` | — | The version string passed as `details.previousVersion` to the `onInstalled` listener. Omit to leave it `undefined`. |
+
+```ts
+// Fire onInstalled with reason "update" and previousVersion "1.0.0"
+await ext.simulateUpdate({ previousVersion: '1.0.0' });
+await expect(ext.storage.local).toEventuallyHaveStorageValue('schemaVersion', '2.0.0');
+
+// Defaults: reason = "update", previousVersion = undefined
+await ext.simulateUpdate();
+```
+
+#### Simulating an extension update / migration
+
+Use `simulateUpdate` when your `onInstalled` handler runs a data migration on `reason === 'update'`:
+
+```ts
+test('migrates legacy storage on update', async ({ ext }) => {
+  // Seed the pre-update state
+  await ext.storage.local.set({ schemaVersion: '1.0.0', legacyKey: 'value' });
+
+  await ext.simulateUpdate({ previousVersion: '1.0.0' });
+
+  await expect(ext.storage.local).toEventuallyHaveStorageValue('schemaVersion', '2.0.0');
+});
+```
+
+**Robust fallback — seed-and-drive.** For migration logic with no `onInstalled` dependency, or to stay robust across Chrome versions, prefer the seed-and-drive pattern: seed the pre-update state including the version marker your code compares (`await ext.storage.local.set({ schemaVersion: '3.9.0', /* legacy data */ })`), drive the migration entry point directly (`ext.background.sendMessage({ type: 'RUN_MIGRATION' })` or `ext.background.evaluate(...)`), then assert with `toEventuallyHaveStorageValue`. This approach does not rely on any Chromium event-binding internal and remains stable across Chrome versions.
+
+---
+
 ### `ext.background`
 
 The MV3 service worker.
@@ -346,6 +390,7 @@ try {
 | `storage/key-absent` | `toHaveStorageValue` found no value at `key` | Confirm the write happened and the area (local/sync/session) is correct. |
 | `drag/no-bounding-box` | `dragAndDrop` source or target has no bounding box | Ensure the locator resolves to a single visible, attached element before dragging. |
 | `drag/cross-page` | `dragAndDrop` source and target belong to different pages | `dragAndDrop` operates within a single page; both locators must come from the same `Page`. |
+| `simulate-update/unavailable` | `simulateUpdate()` found `chrome.runtime.onInstalled.dispatch` absent | The Chromium event-binding internal is missing in this build — use the seed-and-drive fallback instead (seed pre-update storage, call the migration entry point directly). |
 
 ---
 

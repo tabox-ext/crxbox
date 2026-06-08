@@ -6,6 +6,7 @@ import { ContentUi, type ContentUiOptions } from './helpers/content-ui.js';
 import { dragAndDrop as runDragAndDrop, type DragOptions } from './interactions.js';
 import { TabsHelper } from './helpers/tabs.js';
 import { WindowsHelper } from './helpers/windows.js';
+import { CrxboxError } from './diagnostics.js';
 
 export interface ExtOptions {
   path: string;
@@ -75,5 +76,22 @@ export class Ext {
     const ui = new ContentUi(this, page, opts);
     await ui.waitForReady(); // structured diagnostic up front (matches `await ext.contentUi(...)`)
     return ui;
+  }
+
+  /**
+   * @experimental — fire `chrome.runtime.onInstalled` to exercise update/migration
+   * logic. Relies on Chromium's `onInstalled.dispatch` event-binding internal, which
+   * is version-sensitive; throws `simulate-update/unavailable` if absent. For robust
+   * coverage, prefer seeding state + driving the migration entry point directly.
+   */
+  async simulateUpdate(opts?: { reason?: string; previousVersion?: string }): Promise<void> {
+    const details = { reason: opts?.reason ?? 'update', previousVersion: opts?.previousVersion };
+    const fired = await this.background.evaluate((d) => {
+      const ev = chrome.runtime.onInstalled as unknown as { dispatch?: (details: unknown) => void };
+      if (typeof ev.dispatch !== 'function') return false;
+      ev.dispatch(d);
+      return true;
+    }, details);
+    if (!fired) throw new CrxboxError({ code: 'simulate-update/unavailable' });
   }
 }

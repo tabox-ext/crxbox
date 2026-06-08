@@ -1,3 +1,9 @@
+chrome.runtime.onInstalled.addListener((details) => {
+  chrome.storage.local.set({
+    onInstalled: { reason: details.reason, previousVersion: details.previousVersion ?? null },
+  });
+});
+
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg?.type === 'PING') {
     sendResponse({ type: 'PONG' });

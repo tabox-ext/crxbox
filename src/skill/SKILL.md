@@ -24,6 +24,7 @@ Composable form: `base.extend(createExtensionFixtures({ path: './dist' }))`.
 - **Storage:** `ext.storage.local|sync|session` with `.get(key)` / `.set(obj)` / `.clear()`. Auto-reset between tests. `get(key)` returns the unwrapped value (not `{ key: value }`). Matcher: `await expect(ext.storage.local).toHaveStorageValue(key, expected)` (supports `expect.arrayContaining`/`objectContaining`).
 - **Accept dialogs:** `ext.acceptDialogs(page)` — auto-accepts every `confirm`/`alert`/`prompt` on the page; returns a disposer `() => void` to detach. (Prompts are accepted with their default value; for custom prompt text use your own `page.on('dialog', d => d.accept('text'))`.)
 - **Drag-and-drop:** `await ext.dragAndDrop(source, target, opts?)` — robust pointer DnD (press → nudge → stepped glide → settle → release). `opts`: `{ steps?: number (12), nudge?: number (8), settle?: number (4) }`. Use this instead of `locator.dragTo()` when sensors have an activation distance.
+- **Simulate update** *(experimental)*: `await ext.simulateUpdate(opts?)` — fires `chrome.runtime.onInstalled` to test update/migration logic. `opts`: `{ reason?: string (default `'update'`), previousVersion?: string }`. Relies on a Chromium event-binding internal (`onInstalled.dispatch`); version-sensitive — throws `simulate-update/unavailable` if absent. **Robust fallback:** seed pre-update storage (`await ext.storage.local.set({ schemaVersion: '1.x', ...legacyData })`), drive the migration entry point directly (`ext.background.sendMessage({ type: 'RUN_MIGRATION' })` or `ext.background.evaluate(...)`), then assert with `toEventuallyHaveStorageValue`. Prefer this fallback when you have no hard `onInstalled` dependency.
 
 ## Canonical pattern
 ```ts
@@ -61,6 +62,7 @@ Use the matcher only when the write has already completed (e.g. an awaited round
 | `storage/key-absent` | confirm the write and the area (local/sync/session). |
 | `drag/no-bounding-box` | source or target not visible/attached — ensure the locator resolves before dragging. |
 | `drag/cross-page` | source and target are on different pages — `dragAndDrop` is single-page only. |
+| `simulate-update/unavailable` | `onInstalled.dispatch` absent in this Chrome build — use the seed-and-drive fallback instead. |
 
 ## Gotchas
 
@@ -135,7 +137,7 @@ const sandboxed = await ext.openPage('sandbox.html', { viewport: { width: 800, h
 Two known limits beyond crxbox's current reach:
 
 1. **Window-bound tab operations.** "Save the current window's tabs" or similar features that depend on the popup being bound to a real browsing window can't be driven faithfully with `popup.open()` — the popup-as-page isn't attached to a real window. Use `openForTab()` for those, accepting its best-effort constraints.
-2. **Extension-update migrations.** Load-time data-repair routines gated behind an extension version bump (the browser's extension-update flow) are not reachable via storage-seeding + `popup.open()`.
+2. **Extension-update migrations.** Load-time data-repair routines gated behind an extension version bump (the browser's extension-update flow) are now reachable via `ext.simulateUpdate()` (experimental, version-sensitive) or the seed-and-drive fallback pattern.
 
 ## Anti-patterns
 - Never `page.waitForTimeout(...)` — every crxbox helper auto-waits.

@@ -11,7 +11,8 @@ export type DiagnosticCode =
   | 'drag/no-bounding-box'
   | 'drag/cross-page'
   | 'window/create-failed'
-  | 'tabs/not-found';
+  | 'tabs/not-found'
+  | 'simulate-update/unavailable';
 
 export interface Diagnostic {
   code: DiagnosticCode;
@@ -45,6 +46,8 @@ const HINTS: Record<DiagnosticCode, string> = {
     'chrome.windows.create failed in the service worker — check the seeded tab URLs are loadable (extension pages work offline) and that the "tabs" permission is present.',
   'tabs/not-found':
     'no tab matched — the Page may have already closed, or its URL did not match any open tab in the queried window.',
+  'simulate-update/unavailable':
+    'chrome.runtime.onInstalled.dispatch is not available in this Chrome build — simulateUpdate relies on a Chromium event-binding internal and is version-sensitive. Fall back to seeding state + driving the migration entry point directly.',
 };
 
 export function formatMessage(d: Diagnostic, summary?: string): string {
