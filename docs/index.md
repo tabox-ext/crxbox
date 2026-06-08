@@ -24,6 +24,6 @@ features:
     details: Helpers for the popup, content-script UI (Shadow DOM / iframes / injection timing), the MV3 service worker (including forced restart), storage, and the extension ID / URLs.
   - title: A thin layer on Playwright
     details: You keep all of Playwright — locators, assertions, traces, parallelism. crxbox just ships the extension-specific parts so you stop hand-rolling that 150-line fixtures file.
-  - title: Diagnostic errors
-    details: CrxboxError with a machine-readable diagnostic.code (e.g. content-ui/not-injected) and a fix hint, instead of a vague TimeoutError.
+  - title: AI coding agent friendly
+    details: Ships a built-in SKILL.md — a token-efficient guide designed for AI coding agents, covering the full API surface, canonical patterns, and failure codes in one file so agents write correct tests without scanning source.
 ---
