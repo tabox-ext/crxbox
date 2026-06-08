@@ -101,4 +101,4 @@ test('injected UI is accessible', async ({ ext, context }) => {
 });
 ```
 
-See [`docs/API.md`](API.md) for the full `contentUi` signature and all available helpers.
+See the [API reference](/api) for the full `contentUi` signature and all available helpers.

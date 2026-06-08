@@ -9,3 +9,6 @@ test-results-spike/
 playwright-report/
 .playwright/
 *.tgz
+docs/.vitepress/cache/
+docs/.vitepress/dist/
+docs/changelog.md

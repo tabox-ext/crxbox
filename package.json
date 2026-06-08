@@ -5,8 +5,13 @@
   "license": "MIT",
   "author": "Gil Goldberg",
   "homepage": "https://github.com/tabox-ext/crxbox#readme",
-  "repository": { "type": "git", "url": "git+https://github.com/tabox-ext/crxbox.git" },
-  "bugs": { "url": "https://github.com/tabox-ext/crxbox/issues" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tabox-ext/crxbox.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tabox-ext/crxbox/issues"
+  },
   "keywords": [
     "playwright",
     "chrome-extension",
@@ -27,9 +32,19 @@
     },
     "./skill/SKILL.md": "./skill/SKILL.md"
   },
-  "files": ["dist", "skill", "CHANGELOG.md"],
-  "engines": { "node": ">=18" },
-  "publishConfig": { "registry": "https://registry.npmjs.org/", "access": "public", "provenance": true },
+  "files": [
+    "dist",
+    "skill",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "tsup",
     "test:unit": "vitest run",
@@ -37,9 +52,14 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "check:size": "node scripts/check-size.mjs",
+    "docs:dev": "node scripts/copy-changelog.mjs && vitepress dev docs",
+    "docs:build": "node scripts/copy-changelog.mjs && vitepress build docs",
+    "docs:preview": "node scripts/copy-changelog.mjs && vitepress preview docs",
     "prepublishOnly": "npm run build"
   },
-  "peerDependencies": { "@playwright/test": ">=1.40.0" },
+  "peerDependencies": {
+    "@playwright/test": ">=1.40.0"
+  },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
     "@playwright/test": "^1.49.0",
@@ -49,7 +69,7 @@
     "tsup": "^8.0.0",
     "typescript": "^5.5.0",
     "typescript-eslint": "^8.0.0",
+    "vitepress": "^1.6.4",
     "vitest": "^2.0.0"
-  },
-  "dependencies": {}
+  }
 }
