@@ -2,6 +2,14 @@ import { expect as baseExpect } from '@playwright/test';
 import type { StorageArea } from './helpers/storage.js';
 import { formatMessage } from './diagnostics.js';
 
+// Asymmetric matchers (arrayContaining/objectContaining) stringify poorly via JSON,
+// so render them with String(); plain values render as JSON.
+function fmtValue(v: unknown): string {
+  return v && typeof (v as { asymmetricMatch?: unknown }).asymmetricMatch === 'function'
+    ? String(v)
+    : JSON.stringify(v);
+}
+
 export const storageMatchers = {
   async toHaveStorageValue(received: StorageArea, key: string, expected: unknown) {
     const actual = await received.get(key);
@@ -22,19 +30,12 @@ export const storageMatchers = {
       pass = false;
     }
 
-    // Asymmetric matchers (arrayContaining/objectContaining) stringify poorly via JSON,
-    // so render them with String(); plain values render as JSON.
-    const fmt = (v: unknown): string =>
-      v && typeof (v as { asymmetricMatch?: unknown }).asymmetricMatch === 'function'
-        ? String(v)
-        : JSON.stringify(v);
-
     return {
       pass,
       message: () =>
         `expected storage.${received.area}["${key}"] ${pass ? 'not ' : ''}to equal expected\n` +
-        `  expected: ${fmt(expected)}\n` +
-        `  received: ${fmt(actual)}`,
+        `  expected: ${fmtValue(expected)}\n` +
+        `  received: ${fmtValue(actual)}`,
     };
   },
 
@@ -51,27 +52,21 @@ export const storageMatchers = {
     let pass = false;
     for (;;) {
       actual = await received.get(key);
-      if (actual !== undefined) {
-        try {
-          baseExpect(actual).toEqual(expected);
-          pass = true;
-        } catch {
-          pass = false;
-        }
+      try {
+        baseExpect(actual).toEqual(expected);
+        pass = true;
+      } catch {
+        pass = false;
       }
       if (pass || Date.now() >= deadline) break;
       await new Promise((r) => setTimeout(r, interval));
     }
-    const fmt = (v: unknown): string =>
-      v && typeof (v as { asymmetricMatch?: unknown }).asymmetricMatch === 'function'
-        ? String(v)
-        : JSON.stringify(v);
     return {
       pass,
       message: () =>
         `expected storage.${received.area}["${key}"] ${pass ? 'not ' : ''}to eventually equal expected (within ${timeout}ms)\n` +
-        `  expected: ${fmt(expected)}\n` +
-        `  received: ${fmt(actual)}`,
+        `  expected: ${fmtValue(expected)}\n` +
+        `  received: ${fmtValue(actual)}`,
     };
   },
 

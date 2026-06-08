@@ -15,6 +15,7 @@ test('toEventuallyHaveStorageValue fails (bounded) for an absent key', async ({ 
     .toEventuallyHaveStorageValue('never', 'x', { timeout: 500 })
     .catch((e) => e);
   expect(err).toBeTruthy();
+  expect(String(err)).toContain('within 500ms');
 });
 
 test('toHaveStorageKeys passes for a subset and reports missing keys', async ({ ext }) => {
@@ -22,4 +23,12 @@ test('toHaveStorageKeys passes for a subset and reports missing keys', async ({ 
   await expect(ext.storage.local).toHaveStorageKeys(['a', 'b']);
   const err = await expect(ext.storage.local).toHaveStorageKeys(['a', 'zzz']).catch((e) => e);
   expect(String(err)).toContain('zzz');
+});
+
+test('toEventuallyHaveStorageValue can poll until a key is deleted (expected undefined)', async ({ ext }) => {
+  await ext.storage.local.set({ doomed: 'here' });
+  await ext.background.evaluate(() => {
+    setTimeout(() => void chrome.storage.local.remove('doomed'), 300);
+  });
+  await expect(ext.storage.local).toEventuallyHaveStorageValue('doomed', undefined);
 });
