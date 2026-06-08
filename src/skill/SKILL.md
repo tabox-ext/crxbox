@@ -143,6 +143,7 @@ Two known limits beyond crxbox's current reach:
 
 1. **Window-bound tab operations.** "Save the current window's tabs" or similar features that depend on the popup being bound to a real browsing window can't be driven faithfully with `popup.open()` — the popup-as-page isn't attached to a real window. Use `openInWindow(win)` (headless-friendly) or `openForTab()` (headed, real toolbar popup), accepting its best-effort constraints.
 2. **Extension-update migrations.** Load-time data-repair routines gated behind an extension version bump (the browser's extension-update flow) are now reachable via `ext.simulateUpdate()` (experimental, version-sensitive) or the seed-and-drive fallback pattern.
+3. **Network / OAuth / cloud sync.** Flows that hit the network (OAuth sign-in, Google Drive/cloud sync) are out of scope — crxbox does not mock the network. Use Playwright's own `page.route(...)` / request interception to stub those endpoints.
 
 ## Anti-patterns
 - Never `page.waitForTimeout(...)` — every crxbox helper auto-waits.

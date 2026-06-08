@@ -4,6 +4,25 @@ All notable changes to crxbox are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-06-08
+
+First stable release. No API changes since `0.2.1` — this declares the public surface
+SemVer-stable: `ext` (`id`/`url`/`openPage`/`acceptDialogs`/`dragAndDrop`/`contentUi`/
+`simulateUpdate`), `ext.popup` (`open`/`openForTab`/`openInWindow`), `ext.background`,
+`ext.storage`, `ext.windows`, `ext.tabs`, the storage matchers, and the `CrxboxError`
+diagnostic codes. Breaking changes from here require a major bump.
+
+Across `0.0.0 → 1.0.0` crxbox closed every reported adoption blocker and both hard
+testability boundaries (current-window capture, update-gated migration). `simulateUpdate`
+remains `@experimental` (relies on a version-sensitive Chromium internal).
+
+### Changed
+- Packaging: the published tarball now includes `CHANGELOG.md`.
+
+### Notes
+- Network-dependent flows (OAuth, cloud/Drive sync) are out of scope by design — stub them
+  with Playwright's `page.route(...)`.
+
 ## [0.2.1] - 2026-06-08
 
 ### Fixed
