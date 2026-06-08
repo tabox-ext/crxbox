@@ -65,8 +65,8 @@ export const test = base.extend(createExtensionFixtures({ path: './dist' }));
 export const expect = test.expect;
 ```
 
-**Signature:** `createExtensionFixtures(config?: { path?: string; key?: string })`
-The `config.path`/`config.key` set the default values for the `extensionPath`/`extensionKey` options (still overridable with `test.use(...)`).
+**Signature:** `createExtensionFixtures(config?: { path?: string; key?: string; popupViewport?: { width: number; height: number } })`
+The `config.path`/`config.key`/`config.popupViewport` set the default values for the `extensionPath`/`extensionKey`/`popupViewport` options (all still overridable with `test.use(...)`).
 
 ---
 
