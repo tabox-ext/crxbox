@@ -1,6 +1,6 @@
 # crxbox API reference
 
-Complete reference for crxbox's public API. For install and a guided getting-started, see the [README](../README.md). For an AI-agent-oriented condensed version, see the bundled `skill/SKILL.md`.
+Complete reference for crxbox's public API. For install and a guided getting-started, see the [README](/getting-started). For an AI-agent-oriented condensed version, see the bundled [`skill/SKILL.md`](https://github.com/tabox-ext/crxbox/blob/master/skill/SKILL.md).
 
 - [Setup & configuration](#setup--configuration)
 - [Entry points](#entry-points)
