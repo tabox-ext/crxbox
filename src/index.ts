@@ -12,3 +12,5 @@ export { ContentUi } from './helpers/content-ui.js';
 export type { ContentUiOptions } from './helpers/content-ui.js';
 export { dragAndDrop } from './interactions.js';
 export type { DragOptions } from './interactions.js';
+export { TabsHelper } from './helpers/tabs.js';
+export type { TabInfo } from './helpers/tabs.js';

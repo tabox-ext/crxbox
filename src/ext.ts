@@ -4,6 +4,7 @@ import { StorageHelper } from './helpers/storage.js';
 import { PopupHelper } from './helpers/popup.js';
 import { ContentUi, type ContentUiOptions } from './helpers/content-ui.js';
 import { dragAndDrop as runDragAndDrop, type DragOptions } from './interactions.js';
+import { TabsHelper } from './helpers/tabs.js';
 
 export interface ExtOptions {
   path: string;
@@ -17,6 +18,7 @@ export class Ext {
   readonly background: BackgroundHelper;
   readonly storage: StorageHelper;
   readonly popup: PopupHelper;
+  readonly tabs: TabsHelper;
 
   constructor(
     readonly context: BrowserContext,
@@ -26,6 +28,7 @@ export class Ext {
     this.background = new BackgroundHelper(this);
     this.storage = new StorageHelper(this);
     this.popup = new PopupHelper(this);
+    this.tabs = new TabsHelper(this);
   }
 
   url(p: string): string {
