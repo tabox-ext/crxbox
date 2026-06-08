@@ -14,3 +14,5 @@ export { dragAndDrop } from './interactions.js';
 export type { DragOptions } from './interactions.js';
 export { TabsHelper } from './helpers/tabs.js';
 export type { TabInfo } from './helpers/tabs.js';
+export { WindowsHelper } from './helpers/windows.js';
+export type { WindowHandle } from './helpers/windows.js';
