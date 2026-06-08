@@ -203,6 +203,8 @@ Attach a handler that auto-accepts every dialog (`confirm`, `alert`, `prompt`) o
 
 Playwright's default is to dismiss unhandled dialogs, so `window.confirm(...)` returns `false` and silently aborts destructive actions. Call `ext.acceptDialogs(page)` before clicking a button that shows a confirmation dialog.
 
+> A `prompt` is accepted with its **default** value (whatever the page passed to `window.prompt`, or empty) — the helper does not supply prompt text. For `confirm`/`alert` this is exactly the "click OK" behavior you want. If you need to return specific prompt text, attach your own `page.on('dialog', d => d.accept('text'))` handler instead.
+
 ```ts
 const detach = ext.acceptDialogs(popup);
 await popup.getByRole('button', { name: 'Delete All' }).click();

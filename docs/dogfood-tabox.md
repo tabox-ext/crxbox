@@ -66,10 +66,11 @@ crxbox has never seen.
 
 ## Friction / gaps discovered (roadmap candidates)
 
-1. **`popup.open()` default path assumes `popup.html`.** Tabox's popup is `index.html`,
-   so the caller must pass `ext.popup.open('index.html')`. crxbox could read
-   `action.default_popup` from the loaded manifest and default to it, so `popup.open()`
-   "just works" for any extension. (Low effort, high ergonomic payoff.)
+1. **~~`popup.open()` default path assumes `popup.html`.~~ RESOLVED.** `popup.open()` (and
+   `openForTab()`) now read `action.default_popup` (MV2 `browser_action.default_popup`)
+   from the loaded manifest and default to it, falling back to `popup.html` — so it "just
+   works" for any extension, no path argument needed. See `readDefaultPopup` in
+   `src/loader.ts`.
 2. **Running a spec outside the default `testDir` is awkward.** `playwright.config.ts`
    pins `testDir: './tests/integration'`, so `npx playwright test tests/dogfood/...`
    reports "No tests found". Reproducing required a throwaway config that spreads the

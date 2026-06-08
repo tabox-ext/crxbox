@@ -22,7 +22,7 @@ Composable form: `base.extend(createExtensionFixtures({ path: './dist' }))`.
 - **Content-UI (flagship):** `const ui = await ext.contentUi(page, { root, shadow?, frame?, timeout? })` — it is awaited; awaiting waits for the root to be injected. Then `ui.getByRole(...)` / `ui.getByText(...)` / `ui.locator(...)`. `shadow` documents intent only (Playwright always pierces open shadow DOM); use `frame` for iframe-hosted UI.
 - **Background/SW:** `await ext.background.evaluate(fn, arg)`, `.sendMessage(msg)` (sent from a real extension page, returns the SW response), `.waitForReady()`, `.kill()` (forced CDP termination — assert state survives a restart).
 - **Storage:** `ext.storage.local|sync|session` with `.get(key)` / `.set(obj)` / `.clear()`. Auto-reset between tests. `get(key)` returns the unwrapped value (not `{ key: value }`). Matcher: `await expect(ext.storage.local).toHaveStorageValue(key, expected)` (supports `expect.arrayContaining`/`objectContaining`).
-- **Accept dialogs:** `ext.acceptDialogs(page)` — auto-accepts every `confirm`/`alert`/`prompt` on the page; returns a disposer `() => void` to detach.
+- **Accept dialogs:** `ext.acceptDialogs(page)` — auto-accepts every `confirm`/`alert`/`prompt` on the page; returns a disposer `() => void` to detach. (Prompts are accepted with their default value; for custom prompt text use your own `page.on('dialog', d => d.accept('text'))`.)
 - **Drag-and-drop:** `await ext.dragAndDrop(source, target, opts?)` — robust pointer DnD (press → nudge → stepped glide → settle → release). `opts`: `{ steps?: number (12), nudge?: number (8), settle?: number (4) }`. Use this instead of `locator.dragTo()` when sensors have an activation distance.
 
 ## Canonical pattern
