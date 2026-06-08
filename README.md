@@ -12,7 +12,7 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933?logo=node.js&logoColor=white)](https://nodejs.org)
 [![Built on Playwright](https://img.shields.io/badge/built%20on-Playwright-2EAD33?logo=playwright&logoColor=white)](https://playwright.dev)
 
-📚 **[Documentation site →](https://tabox-ext.github.io/crxbox/)** &nbsp;·&nbsp; 📖 **[API reference →](docs/api.md)**
+📚 **[Documentation site →](https://tabox-ext.github.io/crxbox/)**
 
 </div>
 
