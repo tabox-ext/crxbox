@@ -7,7 +7,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: '20', cache: 'npm' }
-      - run: npm ci
+      # npm 10.x shipped with Node 20 intermittently crashes mid-install with
+      # "Exit handler never called!" yet exits 0, leaving node_modules incomplete.
+      # Upgrade to a fixed npm and harden against transient registry hangs.
+      - run: npm install -g npm@latest
+      - run: npm ci --fetch-retries=5 --fetch-retry-factor=2 --fetch-retry-mintimeout=10000
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run test:unit
