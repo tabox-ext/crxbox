@@ -1,8 +1,20 @@
+<div align="center">
+
+<img src="assets/crxbox-logo.png" alt="crxbox logo" width="160" height="160" />
+
 # crxbox
 
-> **Playwright, but extension-aware.** A lightweight toolkit for end-to-end testing Chrome (MV3) extensions — **zero runtime dependencies of its own** (Playwright is a peer dependency you provide; Chromium is installed via Playwright).
+**Playwright, but extension-aware.** A lightweight toolkit for end-to-end testing Chrome (MV3) extensions — **zero runtime dependencies of its own** (Playwright is a peer dependency you provide; Chromium is installed via Playwright).
 
-📚 **Documentation site: [tabox-ext.github.io/crxbox](https://tabox-ext.github.io/crxbox/)**
+[![CI](https://github.com/tabox-ext/crxbox/actions/workflows/ci.yml/badge.svg)](https://github.com/tabox-ext/crxbox/actions/workflows/ci.yml)
+[![Docs](https://github.com/tabox-ext/crxbox/actions/workflows/docs.yml/badge.svg)](https://tabox-ext.github.io/crxbox/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Node](https://img.shields.io/badge/node-%3E%3D18-339933?logo=node.js&logoColor=white)](https://nodejs.org)
+[![Built on Playwright](https://img.shields.io/badge/built%20on-Playwright-2EAD33?logo=playwright&logoColor=white)](https://playwright.dev)
+
+📚 **[Documentation site →](https://tabox-ext.github.io/crxbox/)** &nbsp;·&nbsp; 📖 **[API reference →](docs/API.md)**
+
+</div>
 
 crxbox is a thin layer of fixtures and helpers on top of [`@playwright/test`](https://playwright.dev). It does **not** replace Playwright or build your extension — it adds first-class APIs for the surfaces Playwright doesn't understand: the **popup**, **content-script UI** (Shadow DOM / iframes / injection timing), the **background service worker** (including forced restart), **storage**, and the **extension ID / URLs**.
 
@@ -18,8 +30,6 @@ test('save the current tab from the popup', async ({ ext, page }) => {
   await expect(ext.storage.local).toHaveStorageValue('saved', expect.anything());
 });
 ```
-
-📖 **[Full API reference & all available methods → `docs/API.md`](docs/API.md)**
 
 ---
 
