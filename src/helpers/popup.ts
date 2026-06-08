@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test';
 import type { Ext } from '../ext.js';
 import { CrxboxError } from '../diagnostics.js';
 import { readDefaultPopup } from '../loader.js';
+import type { WindowHandle } from './windows.js';
 
 export interface PopupOpenOptions {
   /** Size the popup page to mimic a real Chrome action popup (default: Playwright's viewport). */
@@ -31,6 +32,31 @@ export class PopupHelper {
     const viewport = opts?.viewport ?? this.ext.options.popupViewport;
     if (viewport) await page.setViewportSize(viewport);
     await page.goto(this.ext.url(this.resolvePopupPath(popupPath)));
+    return page;
+  }
+
+  /**
+   * Open the popup **as a tab inside `window`** (a `WindowHandle` or a window id).
+   * Because the popup then lives in that window, its
+   * `chrome.tabs.query({ currentWindow: true })` resolves to that window's tabs — the
+   * headless-friendly way to test "save the current window's tabs" / active-window flows
+   * (no `chrome.action.openPopup`). Defaults to the manifest's `action.default_popup`.
+   *
+   * Note: the popup's own tab is part of the window, so it appears in current-window
+   * query results — assert with `expect.arrayContaining(...)` or filter extension pages.
+   * A `viewport` (per-call or fixture `popupViewport`) is applied after the page loads.
+   */
+  async openInWindow(
+    window: WindowHandle | number,
+    popupPath?: string,
+    opts?: PopupOpenOptions,
+  ): Promise<Page> {
+    const windowId = typeof window === 'number' ? window : window.id;
+    const page = await this.ext.tabs.create(this.ext.url(this.resolvePopupPath(popupPath)), {
+      windowId,
+    });
+    const viewport = opts?.viewport ?? this.ext.options.popupViewport;
+    if (viewport) await page.setViewportSize(viewport);
     return page;
   }
 
