@@ -38,7 +38,7 @@ export default defineConfig({
         text: 'Guides',
         items: [
           { text: 'Fixture extension', link: '/guides/fixture-extension' },
-          { text: 'Dogfooding with tabox', link: '/guides/dogfood-tabox' },
+          { text: 'CI integration', link: '/guides/ci' },
         ],
       },
       {
