@@ -23,3 +23,12 @@ test('handle.close() removes the window', async ({ ext }) => {
   const remaining = await ext.tabs.query({ windowId: handle.id });
   expect(remaining.length).toBe(0);
 });
+
+test('windows.create with no tabs opens a window with an empty tabs handle', async ({ ext }) => {
+  const handle = await ext.windows.create();
+  expect(typeof handle.id).toBe('number');
+  expect(handle.tabs).toEqual([]);
+  const inWindow = await ext.tabs.query({ windowId: handle.id });
+  expect(inWindow.length).toBeGreaterThanOrEqual(1); // the browser's own default tab exists
+  await handle.close();
+});

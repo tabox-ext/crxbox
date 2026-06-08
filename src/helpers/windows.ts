@@ -18,50 +18,53 @@ export class WindowsHelper {
 
   /**
    * Open a real browser window seeded with `tabs` (full URLs or bare extension
-   * paths). Returns a handle whose `tabs` are real Playwright Pages. Created
-   * windows are torn down automatically when the per-test context closes;
+   * paths). Returns a handle whose `tabs` are real Playwright Pages, in the order
+   * given. If `tabs` is omitted the window opens with the browser's default tab
+   * and `handle.tabs` is empty (nothing was seeded to capture).
+   *
+   * Created windows are torn down when the per-test Playwright context closes;
    * `handle.close()` is available for mid-test cleanup.
    */
   async create(opts?: { tabs?: string[]; focused?: boolean }): Promise<WindowHandle> {
-    const rawUrls = opts?.tabs?.length ? opts.tabs : ['about:blank'];
-    const urls = rawUrls.map((u) => toUrl(this.ext, u));
     const focused = opts?.focused ?? true;
+    const seedUrls = (opts?.tabs ?? []).map((u) => toUrl(this.ext, u));
 
-    const firstOpened = this.ext.context.waitForEvent('page', {
-      predicate: (p) => {
-        const u = p.url();
-        return (
-          u === urls[0] ||
-          u === urls[0] + '/' ||
-          u.startsWith(urls[0]! + '?') ||
-          u.startsWith(urls[0]! + '#')
-        );
-      },
-      timeout: 10_000,
-    });
+    // Capture the first seeded tab's page event — set up BEFORE create so it can't be missed.
+    const first = seedUrls[0];
+    const firstOpened = first
+      ? this.ext.context.waitForEvent('page', {
+          predicate: (p) => {
+            const u = p.url();
+            return u === first || u === first + '/' || u.startsWith(first + '?') || u.startsWith(first + '#');
+          },
+          timeout: 10_000,
+        })
+      : null;
 
     let id: number;
     try {
       const created = await this.ext.background.evaluate(
         async ({ url, focused }) => {
-          const w = await chrome.windows.create({ url, focused });
+          const w = await chrome.windows.create(url ? { url, focused } : { focused });
           return { id: w?.id };
         },
-        { url: urls[0], focused },
+        { url: first, focused },
       );
       if (created.id === undefined) throw new Error('chrome.windows.create returned no window id');
       id = created.id;
     } catch (e) {
-      firstOpened.catch(() => {}); // suppress orphaned timeout
-      throw new CrxboxError({
-        code: 'window/create-failed',
-        cause: e instanceof Error ? e.message : String(e),
-      });
+      firstOpened?.catch(() => {}); // suppress orphaned timeout
+      const inner = e instanceof CrxboxError ? (e.diagnostic.cause as string | undefined) : undefined;
+      const cause = inner ?? (e instanceof Error ? e.message : String(e));
+      throw new CrxboxError({ code: 'window/create-failed', cause });
     }
 
-    const tabs: Page[] = [await firstOpened];
-    for (const u of urls.slice(1)) {
-      tabs.push(await this.ext.tabs.create(u, { windowId: id }));
+    const tabs: Page[] = [];
+    if (firstOpened) {
+      tabs.push(await firstOpened);
+      for (const u of seedUrls.slice(1)) {
+        tabs.push(await this.ext.tabs.create(u, { windowId: id }));
+      }
     }
 
     return {
