@@ -2,6 +2,8 @@
 
 > **Playwright, but extension-aware.** A lightweight toolkit for end-to-end testing Chrome (MV3) extensions — **zero runtime dependencies of its own** (Playwright is a peer dependency you provide; Chromium is installed via Playwright).
 
+📚 **Documentation site: [tabox-ext.github.io/crxbox](https://tabox-ext.github.io/crxbox/)**
+
 crxbox is a thin layer of fixtures and helpers on top of [`@playwright/test`](https://playwright.dev). It does **not** replace Playwright or build your extension — it adds first-class APIs for the surfaces Playwright doesn't understand: the **popup**, **content-script UI** (Shadow DOM / iframes / injection timing), the **background service worker** (including forced restart), **storage**, and the **extension ID / URLs**.
 
 ```ts
