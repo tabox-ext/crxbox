@@ -9,7 +9,9 @@ export type DiagnosticCode =
   | 'background/eval-failed'
   | 'storage/key-absent'
   | 'drag/no-bounding-box'
-  | 'drag/cross-page';
+  | 'drag/cross-page'
+  | 'window/create-failed'
+  | 'tabs/not-found';
 
 export interface Diagnostic {
   code: DiagnosticCode;
@@ -39,6 +41,10 @@ const HINTS: Record<DiagnosticCode, string> = {
     'the source or target locator has no bounding box — it must resolve to a single visible, attached element before dragging.',
   'drag/cross-page':
     'source and target locators belong to different pages — dragAndDrop operates within a single page.',
+  'window/create-failed':
+    'chrome.windows.create failed in the service worker — check the seeded tab URLs are loadable (extension pages work offline) and that the "tabs" permission is present.',
+  'tabs/not-found':
+    'no tab matched — the Page may have already closed, or its URL did not match any open tab in the queried window.',
 };
 
 export function formatMessage(d: Diagnostic, summary?: string): string {
