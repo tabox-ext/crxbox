@@ -37,7 +37,10 @@ jobs:
             echo "::error::Release tag $TAG does not match package.json version $PKG_VERSION"
             exit 1
           fi
-      # No token: npm auto-detects the GitHub OIDC environment and authenticates
-      # via the trusted publisher configured for this package on npmjs.com.
+      # npm auto-detects the GitHub OIDC environment (trusted publishing) and
+      # falls back to NODE_AUTH_TOKEN when no trusted publisher is configured —
+      # which is the case for the bootstrap first publish of a new package name.
       # Provenance is generated automatically; access:public comes from publishConfig.
       - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
