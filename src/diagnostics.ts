@@ -12,6 +12,7 @@ export type DiagnosticCode =
   | 'drag/cross-page'
   | 'window/create-failed'
   | 'tabs/not-found'
+  | 'tabs/create-failed'
   | 'simulate-update/unavailable';
 
 export interface Diagnostic {
@@ -27,7 +28,7 @@ const HINTS: Record<DiagnosticCode, string> = {
   'loader/duplicate-playwright':
     "two @playwright/test copies were resolved (crxbox vs consumer) — crxbox must share the consumer's single instance. Consume crxbox as a published or `npm pack`ed tarball, or dedupe so only one @playwright/test exists; do not live-symlink a dev checkout that ships its own node_modules.",
   'popup/no-active-tab':
-    'openForTab() needs a focused active tab — pass the page you navigated, and avoid stealing focus.',
+    'openForTab drives the real toolbar popup (chrome.action.openPopup), which needs a focused window and is unreliable in new-headless — run headed, or use ext.popup.openInWindow(window) to test current-window logic in headless.',
   'content-ui/not-injected':
     'the root selector never appeared in the expected frame — check the content script matches/run_at, or pass { frame } if it injects into an iframe.',
   'content-ui/wrong-frame':
@@ -46,6 +47,8 @@ const HINTS: Record<DiagnosticCode, string> = {
     'chrome.windows.create failed in the service worker — check the seeded tab URLs are loadable (extension pages work offline) and that the "tabs" permission is present.',
   'tabs/not-found':
     'no tab matched — the Page may have already closed, or its URL did not match any open tab in the queried window.',
+  'tabs/create-failed':
+    'chrome.tabs.create failed, or the tab never opened — check the URL is loadable (extension pages work offline) and that any windowId refers to a real window.',
   'simulate-update/unavailable':
     'chrome.runtime.onInstalled.dispatch is not available in this Chrome build — simulateUpdate relies on a Chromium event-binding internal and is version-sensitive. Fall back to seeding state + driving the migration entry point directly.',
 };

@@ -23,29 +23,45 @@ export class TabsHelper {
   /**
    * Open a new tab and return its Playwright `Page`. `url` may be a full URL or a
    * bare extension path (resolved via `ext.url`). The new target is captured via a
-   * `page` event so you get a real Page handle back.
+   * `page` event so you get a real Page handle back. Throws `tabs/create-failed`
+   * if `chrome.tabs.create` rejects or the tab never opens.
    */
   async create(url: string, opts?: { windowId?: number; active?: boolean }): Promise<Page> {
     const target = toUrl(this.ext, url);
-    const opened = this.ext.context.waitForEvent('page', {
-      predicate: (p) => {
-        const u = p.url();
-        return (
-          u === target ||
-          u === target + '/' ||
-          u.startsWith(target + '?') ||
-          u.startsWith(target + '#')
-        );
-      },
-      timeout: 10_000,
-    });
-    await this.ext.background.evaluate(
-      async ({ url, windowId, active }) => {
-        await chrome.tabs.create({ url, windowId, active });
-      },
-      { url: target, windowId: opts?.windowId, active: opts?.active },
-    );
-    return opened;
+    const opened = this.ext.context
+      .waitForEvent('page', {
+        predicate: (p) => {
+          const u = p.url();
+          return (
+            u === target ||
+            u === target + '/' ||
+            u.startsWith(target + '?') ||
+            u.startsWith(target + '#')
+          );
+        },
+        timeout: 10_000,
+      })
+      .catch(() => null);
+    try {
+      await this.ext.background.evaluate(
+        async ({ url, windowId, active }) => {
+          await chrome.tabs.create({ url, windowId, active });
+        },
+        { url: target, windowId: opts?.windowId, active: opts?.active },
+      );
+    } catch (e) {
+      const inner = e instanceof CrxboxError ? (e.diagnostic.cause as string | undefined) : undefined;
+      throw new CrxboxError({
+        code: 'tabs/create-failed',
+        url: target,
+        cause: inner ?? (e instanceof Error ? e.message : String(e)),
+      });
+    }
+    const page = await opened;
+    if (!page) {
+      throw new CrxboxError({ code: 'tabs/create-failed', url: target, cause: 'tab did not open within 10s' });
+    }
+    return page;
   }
 
   /** Query open tabs (SW `chrome.tabs.query`), returning serializable descriptors. */
