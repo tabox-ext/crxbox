@@ -61,7 +61,9 @@ These tests run against the real `fixtures/ext/` extension in a real Chromium â€
 
 | Spec | Helper exercised |
 |------|-----------------|
-| `popup.spec.ts` | `ext.popup.open()`, `popup.openForTab()`, `popup.openInWindow()` |
+| `popup.spec.ts` | `ext.popup.open()` (popup-as-page â†’ Save â†’ storage) |
+| `open-for-tab.spec.ts` | `ext.popup.openForTab()` (best-effort contract: bound popup or `popup/no-active-tab`) |
+| `open-in-window.spec.ts` | `ext.popup.openInWindow()` (current-window save flow in headless) |
 | `popup-viewport.spec.ts` | `popup.open({ viewport })`, `popupViewport` fixture option |
 | `open-page.spec.ts` | `ext.openPage()` |
 | `storage.spec.ts` | `ext.storage.local/sync/session` get/set/clear, auto-reset |
@@ -71,6 +73,7 @@ These tests run against the real `fixtures/ext/` extension in a real Chromium â€
 | `drag-and-drop.spec.ts` | `ext.dragAndDrop()` |
 | `windows.spec.ts` | `ext.windows.create()`, `WindowHandle` |
 | `tabs.spec.ts` | `ext.tabs.create()`, `ext.tabs.query()`, `ext.tabs.close()` |
+| `tabs-create-failed.spec.ts` | `tabs/create-failed` diagnostic |
 | `simulate-update.spec.ts` | `ext.simulateUpdate()` *(experimental)* |
 | `loader.spec.ts` | `loader/duplicate-playwright`, `loader/build-not-found`, `loader/sw-timeout` diagnostics |
 | `launch-options.spec.ts` | `headless`/`channel`/`slowMo`/`use.launchOptions` forwarding |

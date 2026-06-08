@@ -42,8 +42,8 @@ describe('loader/duplicate-playwright hint', () => {
 });
 
 describe('window/tabs diagnostics', () => {
-  it('renders hints for window/create-failed and tabs/not-found', () => {
-    for (const code of ['window/create-failed', 'tabs/not-found'] as const) {
+  it('renders hints for window/create-failed, tabs/not-found, and tabs/create-failed', () => {
+    for (const code of ['window/create-failed', 'tabs/not-found', 'tabs/create-failed'] as const) {
       const err = new CrxboxError({ code });
       expect(err.diagnostic.code).toBe(code);
       expect(err.message).toContain('hint:');
