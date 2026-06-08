@@ -7,7 +7,9 @@ export type DiagnosticCode =
   | 'content-ui/wrong-frame'
   | 'background/restart-timeout'
   | 'background/eval-failed'
-  | 'storage/key-absent';
+  | 'storage/key-absent'
+  | 'drag/no-bounding-box'
+  | 'drag/cross-page';
 
 export interface Diagnostic {
   code: DiagnosticCode;
@@ -33,6 +35,10 @@ const HINTS: Record<DiagnosticCode, string> = {
     'evaluate() threw inside the service worker — see cause; remember the SW has no DOM.',
   'storage/key-absent':
     'no value is stored under this key — confirm the write happened and the storage area (local/sync/session) is correct.',
+  'drag/no-bounding-box':
+    'the source or target locator has no bounding box — it must resolve to a single visible, attached element before dragging.',
+  'drag/cross-page':
+    'source and target locators belong to different pages — dragAndDrop operates within a single page.',
 };
 
 export function formatMessage(d: Diagnostic, summary?: string): string {
