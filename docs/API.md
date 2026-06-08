@@ -54,7 +54,7 @@ import { test, expect } from 'crxbox';
 test.use({ extensionPath: './dist' });
 ```
 
-`test` is a Playwright `test` already extended with the crxbox fixtures (`ext`, plus the `extensionPath`/`extensionKey` options). `expect` is Playwright's `expect` with the [`toHaveStorageValue`](#matchers) matcher registered.
+`test` is a Playwright `test` already extended with the crxbox fixtures (`ext`, plus the `extensionPath`/`extensionKey` options). `expect` is Playwright's `expect` with the [storage matchers](#matchers) registered (`toHaveStorageValue`, `toEventuallyHaveStorageValue`, `toHaveStorageKeys`).
 
 ### `createExtensionFixtures(config?)` — bring your own Playwright
 

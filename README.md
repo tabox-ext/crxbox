@@ -169,9 +169,12 @@ Every test receives `ext`, your extension-aware handle:
 | **Extension pages** | `ext.openPage(path, opts?)` | Opens options pages, full-page views, and sandbox pages as a normal `Page`. Accepts `{ viewport }`. |
 | **Content UI** (flagship) | `await ext.contentUi(page, { root, shadow?, frame? })` | Awaits injection; pierces open Shadow DOM; scopes into iframes; then `.getByRole/.getByText/.locator`. |
 | **Background / SW** | `ext.background.evaluate / sendMessage / waitForReady / kill()` | Evaluate in the worker, message it, and **forcibly restart** it to test MV3 resilience. |
-| **Storage** | `ext.storage.local\|sync\|session` `.get/.set/.clear` + `toHaveStorageValue` | Auto-reset between tests. `get(key)` returns the unwrapped value (not `{ key: value }`). |
+| **Windows** | `ext.windows.create(opts?)` | Opens a real browser window seeded with known tabs; returns `WindowHandle { id, tabs: Page[], focus(), close() }`. Unlocks active-tab / "save current window" flows. |
+| **Tabs** | `ext.tabs.create / query / close` | Open, query, and close browser tabs; `create` returns a `Page`, `query` returns serializable `TabInfo[]`. |
+| **Storage** | `ext.storage.local\|sync\|session` `.get/.set/.clear` + `toHaveStorageValue` / `toEventuallyHaveStorageValue` / `toHaveStorageKeys` | Auto-reset between tests. `get(key)` returns the unwrapped value (not `{ key: value }`). |
 | **Dialogs** | `ext.acceptDialogs(page)` | Auto-accepts `confirm`/`alert`/`prompt`; returns a disposer. Playwright otherwise dismisses dialogs, silently aborting destructive actions. |
 | **Drag-and-drop** | `ext.dragAndDrop(source, target, opts?)` | Robust pointer DnD that trips activation-distance sensors (dnd-kit, react-dnd). Use instead of `locator.dragTo()`. |
+| **Update / migration** *(experimental)* | `ext.simulateUpdate(opts?)` | Fires `chrome.runtime.onInstalled` to exercise update/migration logic. Version-sensitive; see fallback recipe in the API docs. |
 
 See **[`docs/API.md`](docs/API.md)** for full signatures, options, return types, patterns, and limitations.
 
