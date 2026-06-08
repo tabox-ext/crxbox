@@ -10,3 +10,5 @@ export { PopupHelper } from './helpers/popup.js';
 export type { PopupOpenOptions } from './helpers/popup.js';
 export { ContentUi } from './helpers/content-ui.js';
 export type { ContentUiOptions } from './helpers/content-ui.js';
+export { dragAndDrop } from './interactions.js';
+export type { DragOptions } from './interactions.js';

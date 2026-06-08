@@ -1,8 +1,9 @@
-import type { BrowserContext, Dialog, Page } from '@playwright/test';
+import type { BrowserContext, Dialog, Locator, Page } from '@playwright/test';
 import { BackgroundHelper } from './helpers/background.js';
 import { StorageHelper } from './helpers/storage.js';
 import { PopupHelper } from './helpers/popup.js';
 import { ContentUi, type ContentUiOptions } from './helpers/content-ui.js';
+import { dragAndDrop as runDragAndDrop, type DragOptions } from './interactions.js';
 
 export interface ExtOptions {
   path: string;
@@ -54,6 +55,14 @@ export class Ext {
     };
     page.on('dialog', handler);
     return () => page.off('dialog', handler);
+  }
+
+  /**
+   * Robust pointer drag from `source` to `target` that trips activation-distance
+   * sensors (dnd-kit, react-dnd, …) where `locator.dragTo()` silently no-ops.
+   */
+  async dragAndDrop(source: Locator, target: Locator, opts?: DragOptions): Promise<void> {
+    await runDragAndDrop(source, target, opts);
   }
 
   async contentUi(page: Page, opts: ContentUiOptions): Promise<ContentUi> {
