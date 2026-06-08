@@ -35,6 +35,9 @@ export class PopupHelper {
   }
 
   /**
+   * @experimental — best-effort; most reliable headed or against a freshly created
+   * focused window (see `ext.windows.create({ focused: true })`).
+   *
    * open-for-correct-tab: drive the real action popup from the SW so it binds to the active
    * tab. Requires Chrome 127+ (openPopup stable) and a focused window. Best-effort — see note.
    * Defaults to the manifest's `action.default_popup` when `popupPath` is omitted.
@@ -47,18 +50,22 @@ export class PopupHelper {
       predicate: (p) => p.url().startsWith(prefix + resolvedPath),
       timeout: 5_000,
     });
-    // openPopup targets the FOCUSED window — bringToFront on the tab isn't enough, so focus
-    // the window too. Capture the real error so a genuine failure isn't masked by the timeout.
-    const lastError = await this.ext.background.evaluate(async () => {
-      try {
-        const win = await chrome.windows.getLastFocused();
-        if (win.id !== undefined) await chrome.windows.update(win.id, { focused: true });
-        await chrome.action.openPopup(win.id !== undefined ? { windowId: win.id } : undefined);
-        return null;
-      } catch (e) {
-        return e instanceof Error ? e.message : String(e);
-      }
-    });
+
+    const attempt = async (): Promise<string | null> =>
+      this.ext.background.evaluate(async () => {
+        try {
+          const win = await chrome.windows.getLastFocused();
+          if (win.id !== undefined) await chrome.windows.update(win.id, { focused: true });
+          await chrome.action.openPopup(win.id !== undefined ? { windowId: win.id } : undefined);
+          return null;
+        } catch (e) {
+          return e instanceof Error ? e.message : String(e);
+        }
+      });
+
+    let lastError = await attempt();
+    if (lastError) lastError = await attempt(); // one retry — window focus can lag in headless
+
     if (lastError) {
       opened.catch(() => {}); // suppress the now-orphaned waitForEvent timeout rejection
       throw new CrxboxError({ code: 'popup/no-active-tab', popupPath: resolvedPath, cause: lastError });
